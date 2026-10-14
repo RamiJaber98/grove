@@ -5,6 +5,8 @@ import * as repoActions from "./repoActions";
 import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
+import { compareRefs } from "./compareActions";
+import { focusHistorySearch } from "./historySearchHandle";
 import { useRepo } from "./store/repo";
 
 export async function pickAndOpenRepo() {
@@ -106,6 +108,9 @@ export async function runCommand(id: string) {
     case "discard_all":
       return s.discard(s.changes);
     case "find": {
+      // History search: in the History view Ctrl/Cmd+F searches commits,
+      // unless focus is already inside a diff there.
+      if (s.view === "history" && !document.activeElement?.closest(".monaco-editor") && focusHistorySearch()) return;
       const editor = getActiveDiffEditor()?.getModifiedEditor();
       if (!editor) return s.toast("Open a file's diff to search it.");
       editor.focus();
@@ -148,6 +153,9 @@ export async function runCommand(id: string) {
       return repoActions.openTerminal();
     case "edit_gitignore":
       return repoActions.editGitignore();
+    // Compare refs
+    case "compare_refs":
+      return compareRefs();
   }
 
   s.toast(`Unknown command: ${id}`, "error");

@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { useRepo } from "../store/repo";
 import ChangesPanel from "./ChangesPanel";
+import CompareView, { CompareTab } from "./CompareView";
 import DiffView from "./DiffView";
 import HistoryView from "./HistoryView";
 import StatusBar from "./StatusBar";
@@ -53,8 +54,9 @@ export default function Workspace() {
                 {v === "changes" ? "Changes" : "History"}
               </button>
             ))}
+            <CompareTab />
           </nav>
-          {view === "changes" ? <DiffView /> : <HistoryView />}
+          {view === "compare" ? <CompareView /> : view === "changes" ? <DiffView /> : <HistoryView />}
         </div>
         <div className="splitter" onPointerDown={startResize} role="separator" aria-orientation="vertical" />
         <ChangesPanel width={panelWidth} />

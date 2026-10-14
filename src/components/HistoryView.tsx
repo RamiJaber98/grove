@@ -1,10 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { errorMessage, git, type CommitDetail, type FileChange, type FileVersions, type LogEntry } from "../api/git";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { errorMessage, git, type CommitDetail, type FileChange, type FileVersions, type LogEntry, type LogQuery } from "../api/git";
 import { layoutGraph, type GraphRow } from "../graph";
 import * as refs from "../refActions";
 import { pick } from "../dialogs";
 import { useRepo } from "../store/repo";
 import { loadPref, savePref } from "../store/prefs";
+import { openCompare } from "../store/compare";
+import HistorySearch, { EMPTY_FILTER, type Scope, type SearchFilter } from "./HistorySearch";
 import { Refresh } from "./Icons";
 
 const DiffEditor = lazy(() => import("./DiffEditor"));
@@ -15,76 +17,179 @@ const LANE_W = 14;
 const LANE_COLORS = ["#3fa463", "#6ea4f5", "#d9b44a", "#e07ac0", "#f08c4a", "#5fc2c2", "#a98cf0", "#ef6b6b"];
 const laneColor = (i: number) => LANE_COLORS[i % LANE_COLORS.length];
 
+type Query = Omit<LogQuery, "skip" | "limit">;
+
+/** The search bar's state as a git query, or null for the plain log. */
+function toQuery(filter: SearchFilter, scope: Scope): Query | null {
+  const q: Query = {};
+  const text = filter.text.trim();
+  if (text && filter.mode !== "hash") q[filter.mode] = text;
+  if (filter.since) q.since = filter.since;
+  if (filter.until) q.until = filter.until;
+  if (scope.kind === "ref") q.rev = scope.name;
+  if (Object.keys(q).length === 0) return null;
+  q.all = scope.kind === "all";
+  return q;
+}
+
 export default function HistoryView() {
   const repo = useRepo((s) => s.repo)!;
   const statusVersion = useRepo((s) => s.statusVersion);
-  const [all, setAll] = useState(() => loadPref("historyAll", false));
+  const [scope, setScope] = useState<Scope>(() => (loadPref("historyAll", false) ? { kind: "all" } : { kind: "head" }));
+  const [filter, setFilter] = useState<SearchFilter>(EMPTY_FILTER);
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(null);
+  // Ctrl/Cmd+click marks up to two commits for "Compare selected".
+  const [picked, setPicked] = useState<string[]>([]);
+  // Result of a hash search: the commit it names, or null for no match.
+  const [jump, setJump] = useState<{ text: string; entry: LogEntry | null } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const all = scope.kind === "all";
+  const query = useMemo(() => toQuery(filter, scope), [filter, scope]);
+  const queryKey = JSON.stringify(query);
+  // Message, author, path and date filters drop the commits in between, so
+  // parent links point at rows that aren't shown and the lane layout would
+  // draw lines that go nowhere. The graph is hidden while one is active; a
+  // branch/tag scope keeps the full ancestry, so its graph stays.
+  const filtered = query !== null && Object.keys(query).some((k) => k !== "rev" && k !== "all");
 
   // Reload when the repo changes (new commits, branch switches) or options change.
   useEffect(() => {
     let stale = false;
-    git
-      .log(repo.root, 0, limit, all)
+    const load = query ? git.searchLog(repo.root, { ...query, skip: 0, limit }) : git.log(repo.root, 0, limit, all);
+    load
       .then((e) => {
         if (stale) return;
         setEntries(e);
         setError(null);
       })
-      .catch((e) => !stale && setError(errorMessage(e)));
+      .catch((e) => {
+        if (stale) return;
+        setEntries([]);
+        setError(errorMessage(e));
+      });
     return () => {
       stale = true;
     };
-  }, [repo.root, statusVersion, all, limit]);
+    // queryKey stands in for query, which is a new object on every filter change.
+  }, [repo.root, statusVersion, all, limit, queryKey]);
 
-  const graph = useMemo(() => (entries ? layoutGraph(entries) : []), [entries]);
+  // Hash mode doesn't filter the list: it resolves the prefix and jumps to it.
+  useEffect(() => {
+    const text = filter.text.trim();
+    if (filter.mode !== "hash" || !text) return setJump(null);
+    if (!/^[0-9a-f]{4,64}$/i.test(text)) return setJump({ text, entry: null });
+    let stale = false;
+    git
+      .searchLog(repo.root, { skip: 0, limit: 1, hash: text })
+      .then((r) => !stale && setJump({ text, entry: r[0] ?? null }))
+      .catch(() => !stale && setJump({ text, entry: null }));
+    return () => {
+      stale = true;
+    };
+  }, [repo.root, filter.mode, filter.text]);
+
+  useEffect(() => {
+    if (!jump?.entry) return;
+    setSelected(jump.entry.hash);
+    setPicked([]);
+  }, [jump]);
+
+  // Keep the selected commit visible (after a jump, or keyboard-free paging).
+  useEffect(() => {
+    if (!selected) return;
+    listRef.current?.querySelector(`[data-hash="${selected}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [selected, entries]);
+
+  // A jump to a commit outside the loaded list (another branch, or older
+  // than the loaded pages) shows that commit on its own.
+  const outside = !!jump?.entry && !!entries && !entries.some((e) => e.hash === jump.entry!.hash);
+  const shown = outside ? [jump!.entry!] : entries;
+  const graph = useMemo(() => (shown && !filtered && !outside ? layoutGraph(shown) : []), [shown, filtered, outside]);
   const graphWidth = Math.min(Math.max(1, ...graph.map((r) => r.width)), 12) * LANE_W + 6;
-  const current = entries?.find((e) => e.hash === selected) ?? null;
+  const current = shown?.find((e) => e.hash === selected) ?? null;
+  const pickedRows = (shown ?? []).filter((e) => picked.includes(e.hash));
+
+  const note = !jump
+    ? null
+    : !jump.entry
+      ? "No commit with that hash."
+      : outside
+        ? "Not in the list above; shown on its own."
+        : null;
+
+  const select = (hash: string, multi: boolean) => {
+    setSelected(hash);
+    if (!multi) return setPicked([]);
+    setPicked((p) => {
+      if (p.includes(hash)) return p.filter((h) => h !== hash);
+      // The first Ctrl+click pairs with the commit that was already selected.
+      const base = p.length ? p : selected && selected !== hash ? [selected] : [];
+      return [...base, hash].slice(-2);
+    });
+  };
+
+  const comparePicked = () => {
+    // List order is newest first, so the later row is the older commit: A.
+    const [newer, older] = pickedRows;
+    openCompare({ a: older.hash, aLabel: older.short, b: newer.hash, bLabel: newer.short });
+  };
+
+  const changeScope = (s: Scope) => {
+    setScope(s);
+    setLimit(PAGE);
+    if (s.kind !== "ref") savePref("historyAll", s.kind === "all");
+  };
 
   return (
     <section className="history">
       <header className="diff-header">
         <div className="diff-title">
           <span className="diff-file">History</span>
-          {entries && (
+          {shown && !outside && (
             <span className="diff-dir">
-              {entries.length}
-              {entries.length >= limit ? "+" : ""} commits
+              {shown.length}
+              {shown.length >= limit ? "+" : ""} {filtered ? (shown.length === 1 ? "result" : "results") : "commits"}
             </span>
           )}
         </div>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={all}
-            onChange={(e) => {
-              setAll(e.target.checked);
-              savePref("historyAll", e.target.checked);
-            }}
-          />
-          All branches
-        </label>
+        {pickedRows.length === 2 && (
+          <button className="btn small" title="Compare the two selected commits (older … newer)" onClick={comparePicked}>
+            Compare selected
+          </button>
+        )}
         <button className="icon-btn" title="Refresh" onClick={() => useRepo.getState().refresh()}>
           <Refresh />
         </button>
       </header>
 
-      <div className="history-list" role="listbox" aria-label="Commits">
+      <HistorySearch
+        scope={scope}
+        onScope={changeScope}
+        onFilter={(f) => {
+          setFilter(f);
+          setLimit(PAGE);
+        }}
+        note={note}
+      />
+
+      <div className="history-list" role="listbox" aria-label="Commits" aria-multiselectable="true" ref={listRef}>
         {error && <div className="empty error">{error}</div>}
-        {!error && entries === null && <div className="empty">Loading…</div>}
-        {entries?.length === 0 && <div className="empty">No commits yet.</div>}
-        {entries?.map((c, i) => (
+        {!error && shown === null && <div className="empty">Loading…</div>}
+        {!error && shown?.length === 0 && <div className="empty">{query ? "No commits match." : "No commits yet."}</div>}
+        {shown?.map((c, i) => (
           <div
             key={c.hash}
+            data-hash={c.hash}
             role="option"
-            aria-selected={c.hash === selected}
-            className={`commit-row ${c.hash === selected ? "selected" : ""}`}
-            onClick={() => setSelected(c.hash)}
+            aria-selected={c.hash === selected || picked.includes(c.hash)}
+            className={`commit-row ${c.hash === selected ? "selected" : ""} ${picked.includes(c.hash) ? "picked" : ""}`}
+            onClick={(e) => select(c.hash, e.ctrlKey || e.metaKey)}
           >
-            <GraphCell row={graph[i]} width={graphWidth} merge={c.parents.length > 1} />
+            {graph.length > 0 && <GraphCell row={graph[i]} width={graphWidth} merge={c.parents.length > 1} />}
             <span className="commit-subject">
               {c.refs.filter((r) => !r.endsWith("/HEAD")).map((r) => (
                 <RefBadge key={r} name={r} />
@@ -98,7 +203,7 @@ export default function HistoryView() {
             <span className="commit-hash">{c.short}</span>
           </div>
         ))}
-        {entries && entries.length >= limit && (
+        {shown && !outside && shown.length >= limit && (
           <button className="btn small load-more" onClick={() => setLimit(limit + PAGE)}>
             Load more
           </button>

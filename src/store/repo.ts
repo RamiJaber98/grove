@@ -6,7 +6,7 @@ import { loadPref, savePref } from "./prefs";
 export type DiffMode = "side-by-side" | "inline";
 export type Theme = "system" | "light" | "dark";
 export type Group = "conflicts" | "staged" | "changes" | "stash";
-export type MainView = "changes" | "history";
+export type MainView = "changes" | "history" | "compare"; // compare: see store/compare.ts
 
 export interface Selection {
   group: Group;

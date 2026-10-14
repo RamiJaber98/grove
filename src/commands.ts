@@ -69,6 +69,7 @@ export const COMMANDS: Record<string, CommandInfo> = {
   merge_branch: { label: "Merge Into Current…" },
   rebase_branch: { label: "Rebase Current Onto…" },
   delete_branch: { label: "Delete Branch…", danger: true },
+  compare_refs: { label: "Compare…" }, // compare refs
 
   // Tags
   add_tag: { label: "Create Tag…" },
@@ -102,7 +103,7 @@ export const MORE_MENU: { title: string; ids: string[] }[] = [
   { title: "Commit", ids: ["commit_amend", "undo_commit"] },
   { title: "Changes", ids: ["stage_all", "unstage_all", "discard_all", "clean_untracked"] },
   { title: "Stash", ids: ["stash", "stash_untracked", "stash_staged", "stash_apply", "stash_pop", "stash_drop"] },
-  { title: "Branch", ids: ["checkout_branch", "new_branch", "rename_branch", "merge_branch", "rebase_branch", "delete_branch"] },
+  { title: "Branch", ids: ["checkout_branch", "new_branch", "rename_branch", "merge_branch", "rebase_branch", "delete_branch", "compare_refs"] },
   { title: "Tags", ids: ["add_tag", "delete_tag", "push_tags"] },
   { title: "Remote", ids: ["add_remote", "remove_remote"] },
   { title: "Reset & History", ids: ["cherry_pick", "revert_commit", "reset_soft", "reset_mixed", "reset_hard"] },

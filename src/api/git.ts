@@ -200,4 +200,50 @@ export const git = {
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
   openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
+  // History search and compare
+  searchLog: (root: string, query: LogQuery) => invoke<LogEntry[]>("search_log", { root, query }),
+  /** `b` of null compares with the working tree. */
+  compare: (root: string, a: string, b: string | null, threeDot: boolean) =>
+    invoke<Comparison>("compare", { root, a, b, threeDot }),
+  /** `head` of null reads the file on disk. */
+  refVersions: (root: string, base: string, head: string | null, path: string, from?: string) =>
+    invoke<FileVersions>("ref_versions", { root, base, head, path, from }),
 };
+
+// ── History search and compare ──────────────────────────────────────────
+
+/** Filters for `searchLog`; empty fields are ignored. Dates are YYYY-MM-DD. */
+export interface LogQuery {
+  skip: number;
+  limit: number;
+  all?: boolean;
+  rev?: string;
+  message?: string;
+  author?: string;
+  path?: string;
+  since?: string;
+  until?: string;
+  /** Hash prefix: returns just that commit, or nothing. */
+  hash?: string;
+}
+
+export interface CompareFile {
+  path: string;
+  kind: ChangeKind;
+  from?: string | null;
+  /** Null for binary files. */
+  added: number | null;
+  removed: number | null;
+}
+
+export interface Comparison {
+  /** Full hash of the left side (A, or the merge base for three-dot). */
+  base: string;
+  /** Full hash of B; null for the working tree. */
+  head: string | null;
+  files: CompareFile[];
+  /** Commits in B not in A. */
+  ahead: LogEntry[];
+  /** Commits in A not in B. */
+  behind: LogEntry[];
+}
