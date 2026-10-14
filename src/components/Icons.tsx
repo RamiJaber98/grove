@@ -39,3 +39,12 @@ export const Branch = ({ size = 14 }: P) => (
 export const Refresh = ({ size = 14 }: P) => (
   <svg {...base(size)}><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" /></svg>
 );
+export const Plus = ({ size = 14 }: P) => (
+  <svg {...base(size)}><path d="M8 3v10M3 8h10" /></svg>
+);
+export const Minus = ({ size = 14 }: P) => (
+  <svg {...base(size)}><path d="M3 8h10" /></svg>
+);
+export const Discard = ({ size = 14 }: P) => (
+  <svg {...base(size)}><path d="M4 6h6.5a3 3 0 0 1 0 6H7M6.5 3.5 4 6l2.5 2.5" /></svg>
+);

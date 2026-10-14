@@ -3,17 +3,27 @@ import { invoke } from "@tauri-apps/api/core";
 export interface RepoInfo {
   root: string;
   name: string;
-  branch: string | null;
 }
 
-/** Status letters as shown in the panel (mirrors VS / VS Code). */
-export type ChangeKind = "M" | "A" | "D" | "R" | "U" | "C" | "!";
+/** Status letters as shown in the panel (mirrors VS / VS Code). U = untracked, ! = conflicted. */
+export type ChangeKind = "M" | "A" | "D" | "R" | "C" | "U" | "!";
 
 export interface FileChange {
   path: string;
   kind: ChangeKind;
   /** Original path for renames. */
   from?: string;
+}
+
+export interface Status {
+  branch: string | null;
+  upstream: string | null;
+  ahead: number;
+  behind: number;
+  hasCommits: boolean;
+  staged: FileChange[];
+  changes: FileChange[];
+  conflicts: FileChange[];
 }
 
 export interface StashEntry {
@@ -39,4 +49,11 @@ export function errorMessage(e: unknown): string {
 export const git = {
   launchPath: () => invoke<string | null>("launch_path"),
   openRepo: (path: string) => invoke<RepoInfo>("open_repo", { path }),
+  closeRepo: () => invoke<void>("close_repo"),
+  status: (root: string) => invoke<Status>("status", { root }),
+  stage: (root: string, paths: string[]) => invoke<void>("stage", { root, paths }),
+  unstage: (root: string, paths: string[]) => invoke<void>("unstage", { root, paths }),
+  unstageAll: (root: string) => invoke<void>("unstage_all", { root }),
+  discard: (root: string, tracked: string[], untracked: string[]) =>
+    invoke<void>("discard", { root, tracked, untracked }),
 };

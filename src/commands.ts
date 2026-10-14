@@ -49,9 +49,9 @@ export const COMMANDS: Record<string, CommandInfo> = {
   undo_commit: { label: "Undo Last Commit", phase: 6 },
 
   // Changes
-  stage_all: { label: "Stage All Changes", phase: 2 },
-  unstage_all: { label: "Unstage All Changes", phase: 2 },
-  discard_all: { label: "Discard All Changes", phase: 2, danger: true },
+  stage_all: { label: "Stage All Changes" },
+  unstage_all: { label: "Unstage All Changes" },
+  discard_all: { label: "Discard All Changes", danger: true },
   clean_untracked: { label: "Delete Untracked Files", phase: 6, danger: true },
 
   // Stash

@@ -17,6 +17,13 @@ export async function runCommand(id: string) {
       return s.closeRepo();
     case "refresh":
       return s.refresh();
+    case "stage_all":
+      // Only the Changes list: `git add -A` would also mark conflicts resolved.
+      return s.stage(s.changes);
+    case "unstage_all":
+      return s.unstageAll();
+    case "discard_all":
+      return s.discard(s.changes);
     case "diff_side_by_side":
       return s.setDiffMode("side-by-side");
     case "diff_inline":

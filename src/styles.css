@@ -180,6 +180,7 @@ code { font-family: var(--mono); font-size: 12px; }
 
 .groups { flex: 1; overflow-y: auto; padding-bottom: 12px; }
 .group-header {
+  outline: none;
   width: 100%; height: 26px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 6px;
   border: 0; background: none; cursor: pointer; text-align: left;
 }
@@ -201,7 +202,18 @@ code { font-family: var(--mono); font-size: 12px; }
 .file.selected { background: var(--bg-active); }
 .file-name { white-space: nowrap; }
 .file-dir { flex: 1; min-width: 0; color: var(--text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kind { width: 14px; text-align: center; font: 600 11px var(--mono); }
+.file.deleted .file-name { text-decoration: line-through; opacity: .8; }
+.file:focus-visible, .group-header:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.row-actions { display: none; gap: 1px; flex: none; }
+.file:hover .row-actions, .file:focus-within .row-actions, .file.selected .row-actions,
+.group-header:hover .row-actions, .group-header:focus-within .row-actions { display: inline-flex; }
+.row-action {
+  display: inline-grid; place-items: center; width: 22px; height: 20px; padding: 0;
+  border: 0; border-radius: 4px; background: none; color: var(--text-muted); cursor: pointer;
+}
+.row-action:hover { background: var(--bg-hover); color: var(--text); }
+.file.selected .row-action:hover { background: rgba(127, 127, 127, .2); }
+.kind { width: 14px; flex: none; text-align: center; font: 600 11px var(--mono); }
 .kind-M { color: var(--kind-M); }
 .kind-A { color: var(--kind-A); }
 .kind-U { color: var(--kind-U); }

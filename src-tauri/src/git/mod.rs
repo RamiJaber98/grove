@@ -1,9 +1,13 @@
 //! Thin wrapper around the user's `git` executable. Every git operation in
-//! Grove goes through `run`, so behaviour matches the terminal exactly
-//! (credentials, hooks, config, SSH keys).
+//! Grove goes through `run`/`run_with_stdin`, so behaviour matches the
+//! terminal exactly (credentials, hooks, config, SSH keys).
 
+pub mod ops;
+pub mod status;
+
+use std::io::Write;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use serde::Serialize;
 
@@ -13,21 +17,23 @@ pub struct GitError {
 }
 
 impl GitError {
-    fn new(message: impl Into<String>) -> Self {
+    pub fn new(message: impl Into<String>) -> Self {
         Self { message: message.into() }
     }
 }
 
 pub type GitResult<T> = Result<T, GitError>;
 
-/// Runs `git <args>` in `cwd` and returns stdout, or stderr as the error.
-pub fn run(cwd: &Path, args: &[&str]) -> GitResult<String> {
+fn command(cwd: &Path, args: &[&str]) -> Command {
     let mut cmd = Command::new("git");
     cmd.args(args)
         .current_dir(cwd)
         // Keep git from opening pagers or prompting on a terminal we don't have.
         .env("GIT_PAGER", "cat")
         .env("GIT_TERMINAL_PROMPT", "0")
+        // Stop `git status` from rewriting the index; otherwise every refresh
+        // would trigger the file watcher and refresh again.
+        .env("GIT_OPTIONAL_LOCKS", "0")
         .env("LC_ALL", "C");
 
     #[cfg(windows)]
@@ -37,15 +43,18 @@ pub fn run(cwd: &Path, args: &[&str]) -> GitResult<String> {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
+    cmd
+}
 
-    let output = cmd.output().map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            GitError::new("git was not found on your PATH. Install git and restart Grove.")
-        } else {
-            GitError::new(format!("failed to run git: {e}"))
-        }
-    })?;
+fn spawn_error(e: std::io::Error) -> GitError {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        GitError::new("git was not found on your PATH. Install git and restart Grove.")
+    } else {
+        GitError::new(format!("failed to run git: {e}"))
+    }
+}
 
+fn finish(args: &[&str], output: std::process::Output) -> GitResult<String> {
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     } else {
@@ -58,6 +67,46 @@ pub fn run(cwd: &Path, args: &[&str]) -> GitResult<String> {
     }
 }
 
+/// Runs `git <args>` in `cwd` and returns stdout, or stderr as the error.
+pub fn run(cwd: &Path, args: &[&str]) -> GitResult<String> {
+    let output = command(cwd, args)
+        .stdin(Stdio::null())
+        .output()
+        .map_err(spawn_error)?;
+    finish(args, output)
+}
+
+/// Like `run`, but writes `input` to git's stdin. Used with
+/// `--pathspec-from-file=- --pathspec-file-nul` so any number of paths can be
+/// passed without hitting command-line length limits.
+pub fn run_with_stdin(cwd: &Path, args: &[&str], input: &[u8]) -> GitResult<String> {
+    let mut child = command(cwd, args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(spawn_error)?;
+    // Drop stdin after writing so git sees EOF.
+    child
+        .stdin
+        .take()
+        .expect("stdin is piped")
+        .write_all(input)
+        .map_err(|e| GitError::new(format!("failed to write to git: {e}")))?;
+    let output = child.wait_with_output().map_err(spawn_error)?;
+    finish(args, output)
+}
+
+/// NUL-joins paths for `--pathspec-file-nul`.
+pub fn nul_paths(paths: &[String]) -> Vec<u8> {
+    let mut buf = Vec::new();
+    for p in paths {
+        buf.extend_from_slice(p.as_bytes());
+        buf.push(0);
+    }
+    buf
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RepoInfo {
@@ -65,8 +114,6 @@ pub struct RepoInfo {
     pub root: String,
     /// Folder name of the root, used for the window title.
     pub name: String,
-    /// Current branch, or `None` when HEAD is detached.
-    pub branch: Option<String>,
 }
 
 /// Resolves any path inside a working tree to the repository it belongs to.
@@ -80,15 +127,5 @@ pub fn repo_info(path: &Path) -> GitResult<RepoInfo> {
         .to_string();
 
     let name = root.rsplit('/').next().unwrap_or(&root).to_string();
-
-    // Empty on a detached HEAD; also works on a fresh repo with no commits.
-    let branch = run(Path::new(&root), &["branch", "--show-current"])?
-        .trim()
-        .to_string();
-
-    Ok(RepoInfo {
-        root,
-        name,
-        branch: (!branch.is_empty()).then_some(branch),
-    })
+    Ok(RepoInfo { root, name })
 }

@@ -44,7 +44,7 @@ src-tauri/           Rust backend
 ## Roadmap
 
 1. ✅ Skeleton — window, layout, native menus, open repository
-2. Status panel — staged / changes, stage, unstage, discard, file watcher
+2. ✅ Status panel — staged / changes, stage, unstage, discard, file watcher
 3. Diff viewer — Monaco diff editor, side-by-side and inline
 4. Commit, Push, Pull
 5. Stashes

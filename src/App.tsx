@@ -29,6 +29,21 @@ export default function App() {
     });
   }, []);
 
+  // Keep the panel live: file-watcher events from the backend, plus a refresh
+  // whenever the window regains focus (catches anything the watcher missed).
+  useEffect(() => {
+    if (!isTauri || !repo) return;
+    const refresh = () => useRepo.getState().refresh();
+    const unlistenChange = listen("repo-changed", refresh);
+    const unlistenFocus = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (focused) refresh();
+    });
+    return () => {
+      unlistenChange.then((f) => f());
+      unlistenFocus.then((f) => f());
+    };
+  }, [repo]);
+
   useEffect(() => {
     if (theme === "system") delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = theme;
