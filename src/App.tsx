@@ -7,6 +7,7 @@ import { runCommand } from "./runCommand";
 import Welcome from "./components/Welcome";
 import Workspace from "./components/Workspace";
 import Toasts from "./components/Toasts";
+import Dialog from "./components/Dialog";
 
 export default function App() {
   const repo = useRepo((s) => s.repo);
@@ -58,6 +59,7 @@ export default function App() {
   return (
     <>
       {repo ? <Workspace /> : <Welcome />}
+      <Dialog />
       <Toasts />
     </>
   );

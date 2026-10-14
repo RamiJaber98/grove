@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from "react";
 import type { FileChange } from "../api/git";
+import * as actions from "../actions";
 import { runCommand } from "../runCommand";
 import { useRepo, type Group } from "../store/repo";
-import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner } from "./Icons";
+import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
 import MoreMenu from "./MoreMenu";
 
 interface Action {
@@ -116,9 +117,15 @@ export default function ChangesPanel({ width }: { width: number }) {
                 key={s.ref}
                 group="stash"
                 stashRef={s.ref}
-                title={`${s.ref}: ${s.message}`}
+                title={s.message}
+                tooltip={`${s.ref}${s.branch ? ` on ${s.branch}` : ""}, ${new Date(s.time * 1000).toLocaleString()}`}
                 files={s.files}
                 nested
+                groupActions={[
+                  { title: "Drop Stash", icon: <Trash />, run: () => actions.dropStash(s.ref) },
+                  { title: "Apply Stash (keep it)", icon: <Check />, run: () => actions.applyStash(false, s.ref) },
+                  { title: "Pop Stash (apply and remove)", icon: <Discard />, run: () => actions.applyStash(true, s.ref) },
+                ]}
               />
             ))
           )}
@@ -166,12 +173,14 @@ function activate(fn: () => void) {
 
 function Section({
   title,
+  tooltip,
   count,
   nested,
   actions,
   children,
 }: {
   title: string;
+  tooltip?: string;
   count: number;
   nested?: boolean;
   actions?: Action[];
@@ -180,7 +189,7 @@ function Section({
   const [open, setOpen] = useState(!nested);
   return (
     <div className={`group ${nested ? "nested" : ""}`}>
-      <div className="group-header" aria-expanded={open} {...activate(() => setOpen(!open))}>
+      <div className="group-header" aria-expanded={open} title={tooltip} {...activate(() => setOpen(!open))}>
         <Chevron open={open} size={14} />
         <span className="group-title">{title}</span>
         {actions && count > 0 && <Actions actions={actions} />}
@@ -194,6 +203,7 @@ function Section({
 function FileGroup({
   group,
   title,
+  tooltip,
   files,
   emptyText,
   stashRef,
@@ -203,6 +213,7 @@ function FileGroup({
 }: {
   group: Group;
   title: string;
+  tooltip?: string;
   files: FileChange[];
   emptyText?: string;
   stashRef?: string;
@@ -214,7 +225,7 @@ function FileGroup({
   const select = useRepo((s) => s.select);
 
   return (
-    <Section title={title} count={files.length} nested={nested} actions={groupActions}>
+    <Section title={title} tooltip={tooltip} count={files.length} nested={nested} actions={groupActions}>
       {files.length === 0 && emptyText ? <div className="group-empty">{emptyText}</div> : null}
       {files.map((f) => {
         const selected =

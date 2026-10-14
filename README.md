@@ -47,7 +47,7 @@ src-tauri/           Rust backend
 2. ✅ Status panel — staged / changes, stage, unstage, discard, file watcher
 3. ✅ Diff viewer — Monaco diff editor, side-by-side and inline
 4. ✅ Commit, Push, Pull (plus fetch, sync, amend, undo, force push)
-5. Stashes
+5. ✅ Stashes
 6. ⋯ menu commands — fetch, branches, tags, remotes, reset…
 7. History and merge conflicts
 8. Polish — settings, shortcuts, installers, auto-update

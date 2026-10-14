@@ -6,6 +6,7 @@ pub mod commit;
 pub mod diff;
 pub mod ops;
 pub mod remote;
+pub mod stash;
 pub mod status;
 
 use std::io::Write;

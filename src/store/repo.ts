@@ -97,8 +97,13 @@ const fileName = (path: string) => path.split("/").pop() ?? path;
  * Keeps the selected file selected across a status refresh. If it moved
  * between groups (e.g. it was just staged or unstaged), follow it there.
  */
-function followSelection(sel: Selection | null, status: Status): Selection | null {
-  if (!sel || sel.group === "stash") return sel;
+function followSelection(sel: Selection | null, status: Status, stashes: StashEntry[]): Selection | null {
+  if (!sel) return null;
+  if (sel.group === "stash") {
+    // Stash refs shift when one is dropped; clear rather than show the wrong one.
+    const stash = stashes.find((s) => s.ref === sel.stashRef);
+    return stash?.files.some((f) => f.path === sel.path) ? sel : null;
+  }
   const order: Group[] = [sel.group, "staged", "changes", "conflicts"];
   for (const group of order) {
     const list = group === "staged" ? status.staged : group === "changes" ? status.changes : status.conflicts;
@@ -112,13 +117,14 @@ export const useRepo = create<State>((set, get) => {
   async function loadStatus() {
     const repo = get().repo;
     if (!repo) return;
-    const status = await git.status(repo.root);
+    const [status, stashes] = await Promise.all([git.status(repo.root), git.stashList(repo.root)]);
     // Ignore results for a repo that was closed or switched meanwhile.
     if (get().repo?.root !== repo.root) return;
 
     set({
       ...status,
-      selection: followSelection(get().selection, status),
+      stashes,
+      selection: followSelection(get().selection, status, stashes),
       statusVersion: get().statusVersion + 1,
     });
   }

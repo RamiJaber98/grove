@@ -59,7 +59,7 @@ fn is_relevant(git_dir: &Path, path: &Path) -> bool {
         [] => false,
         [name, ..] if name.ends_with(".lock") => false,
         [file] => matches!(*file, "index" | "HEAD" | "packed-refs" | "MERGE_HEAD" | "REBASE_HEAD"),
-        ["refs", ..] => !parts.last().is_some_and(|l| l.ends_with(".lock")),
+        ["refs", ..] | ["logs", "refs", "stash"] => !parts.last().is_some_and(|l| l.ends_with(".lock")),
         _ => false,
     }
 }
@@ -79,5 +79,6 @@ mod tests {
         assert!(!is_relevant(git, Path::new("/r/.git/refs/heads/main.lock")));
         assert!(!is_relevant(git, Path::new("/r/.git/objects/ab/cdef")));
         assert!(!is_relevant(git, Path::new("/r/.git/logs/HEAD")));
+        assert!(is_relevant(git, Path::new("/r/.git/logs/refs/stash")));
     }
 }

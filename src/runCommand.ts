@@ -32,6 +32,18 @@ export async function runCommand(id: string) {
       return actions.amend();
     case "undo_commit":
       return actions.undoLastCommit();
+    case "stash":
+      return actions.stash("tracked");
+    case "stash_untracked":
+      return actions.stash("include_untracked");
+    case "stash_staged":
+      return actions.stash("staged");
+    case "stash_apply":
+      return actions.applyStash(false);
+    case "stash_pop":
+      return actions.applyStash(true);
+    case "stash_drop":
+      return actions.dropStash();
     case "open_repo":
       return pickAndOpenRepo();
     case "close_repo":

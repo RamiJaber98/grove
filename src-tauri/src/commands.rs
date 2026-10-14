@@ -4,6 +4,7 @@ use tauri::{AppHandle, State};
 
 use crate::git::diff::FileVersions;
 use crate::git::remote::RemoteOp;
+use crate::git::stash::{StashEntry, StashMode};
 use crate::git::status::Status;
 use crate::git::{self, ops, GitError, GitResult, RepoInfo};
 use crate::watcher::RepoWatcher;
@@ -102,4 +103,24 @@ pub async fn undo_last_commit(root: String) -> GitResult<String> {
 #[tauri::command]
 pub async fn remote_op(root: String, op: RemoteOp) -> GitResult<String> {
     blocking(move || git::remote::run_op(Path::new(&root), op)).await
+}
+
+#[tauri::command]
+pub async fn stash_list(root: String) -> GitResult<Vec<StashEntry>> {
+    blocking(move || git::stash::list(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn stash_push(root: String, message: String, mode: StashMode) -> GitResult<()> {
+    blocking(move || git::stash::push(Path::new(&root), &message, mode)).await
+}
+
+#[tauri::command]
+pub async fn stash_apply(root: String, stash_ref: String, pop: bool) -> GitResult<()> {
+    blocking(move || git::stash::apply(Path::new(&root), &stash_ref, pop)).await
+}
+
+#[tauri::command]
+pub async fn stash_drop(root: String, stash_ref: String) -> GitResult<()> {
+    blocking(move || git::stash::drop_stash(Path::new(&root), &stash_ref)).await
 }

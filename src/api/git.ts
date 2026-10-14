@@ -30,8 +30,13 @@ export interface StashEntry {
   /** e.g. "stash@{0}" */
   ref: string;
   message: string;
+  branch: string | null;
+  /** Unix seconds. */
+  time: number;
   files: FileChange[];
 }
+
+export type StashMode = "tracked" | "include_untracked" | "staged";
 
 export interface Side {
   exists: boolean;
@@ -88,4 +93,10 @@ export const git = {
   undoLastCommit: (root: string) => invoke<string>("undo_last_commit", { root }),
   /** Returns a one-line summary of what happened. */
   remoteOp: (root: string, op: RemoteOp) => invoke<string>("remote_op", { root, op }),
+  stashList: (root: string) => invoke<StashEntry[]>("stash_list", { root }),
+  stashPush: (root: string, message: string, mode: StashMode) =>
+    invoke<void>("stash_push", { root, message, mode }),
+  stashApply: (root: string, stashRef: string, pop: boolean) =>
+    invoke<void>("stash_apply", { root, stashRef, pop }),
+  stashDrop: (root: string, stashRef: string) => invoke<void>("stash_drop", { root, stashRef }),
 };

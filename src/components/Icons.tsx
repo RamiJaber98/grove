@@ -51,3 +51,6 @@ export const Discard = ({ size = 14 }: P) => (
 export const Spinner = ({ size = 14 }: P) => (
   <svg {...base(size)} className="spin"><path d="M8 2a6 6 0 1 0 6 6" /></svg>
 );
+export const Trash = ({ size = 14 }: P) => (
+  <svg {...base(size)}><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" /></svg>
+);

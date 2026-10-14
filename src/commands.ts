@@ -57,12 +57,12 @@ export const COMMANDS: Record<string, CommandInfo> = {
   clean_untracked: { label: "Delete Untracked Files", phase: 6, danger: true },
 
   // Stash
-  stash: { label: "Stash", phase: 5 },
-  stash_untracked: { label: "Stash (Include Untracked)", phase: 5 },
-  stash_staged: { label: "Stash Staged Only", phase: 5 },
-  stash_apply: { label: "Apply Latest Stash", phase: 5 },
-  stash_pop: { label: "Pop Latest Stash", phase: 5 },
-  stash_drop: { label: "Drop Stash…", phase: 5, danger: true },
+  stash: { label: "Stash" },
+  stash_untracked: { label: "Stash (Include Untracked)" },
+  stash_staged: { label: "Stash Staged Changes" },
+  stash_apply: { label: "Apply Latest Stash" },
+  stash_pop: { label: "Pop Latest Stash" },
+  stash_drop: { label: "Drop Stash…", danger: true },
 
   // Branch
   checkout_branch: { label: "Checkout…", phase: 6 },

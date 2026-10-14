@@ -4,7 +4,8 @@
  * refreshes the panel afterwards.
  */
 import { ask } from "@tauri-apps/plugin-dialog";
-import { errorMessage, git, type RemoteOp } from "./api/git";
+import { errorMessage, git, type RemoteOp, type StashMode } from "./api/git";
+import { pick, promptText } from "./dialogs";
 import { useRepo } from "./store/repo";
 
 const subject = (message: string) => message.split("\n")[0];
@@ -137,5 +138,79 @@ export async function remote(op: RemoteOp) {
   }
   await withBusy(REMOTE_LABEL[op], async (root) => {
     useRepo.getState().toast(await git.remoteOp(root, op));
+  });
+}
+
+const STASH_MODE_LABEL: Record<StashMode, string> = {
+  tracked: "Stash",
+  include_untracked: "Stash (Include Untracked)",
+  staged: "Stash Staged Changes",
+};
+
+export async function stash(mode: StashMode) {
+  const s = useRepo.getState();
+  if (mode === "staged" && s.staged.length === 0) return s.toast("There are no staged changes to stash.");
+  if (s.staged.length + s.changes.length === 0) return s.toast("There are no changes to stash.");
+  if (mode === "tracked" && s.staged.length === 0 && s.changes.every((f) => f.kind === "U")) {
+    return s.toast('Only untracked files changed. Use "Stash (Include Untracked)".');
+  }
+
+  const message = await promptText({
+    title: STASH_MODE_LABEL[mode],
+    placeholder: "Message (optional)",
+    okLabel: "Stash",
+    allowEmpty: true,
+  });
+  if (message === null) return;
+  await withBusy("Stashing…", async (root) => {
+    await git.stashPush(root, message, mode);
+    useRepo.getState().toast(message ? `Stashed "${message}".` : "Changes stashed.");
+  });
+}
+
+/** Asks which stash to act on when there's more than one. */
+async function chooseStash(title: string): Promise<string | null> {
+  const { stashes, toast } = useRepo.getState();
+  if (stashes.length === 0) {
+    toast("There are no stashes.");
+    return null;
+  }
+  if (stashes.length === 1) return stashes[0].ref;
+  return pick({
+    title,
+    placeholder: "Pick a stash",
+    items: stashes.map((st) => ({
+      label: st.message,
+      detail: `${st.ref}${st.branch ? ` · ${st.branch}` : ""} · ${new Date(st.time * 1000).toLocaleString()}`,
+      value: st.ref,
+    })),
+  });
+}
+
+/** Applies (or pops) `ref`, or the latest stash when omitted. */
+export async function applyStash(pop: boolean, ref?: string) {
+  const s = useRepo.getState();
+  ref ??= s.stashes[0]?.ref;
+  if (!ref) return s.toast("There are no stashes.");
+  await withBusy(pop ? "Popping stash…" : "Applying stash…", async (root) => {
+    await git.stashApply(root, ref, pop);
+    useRepo.getState().toast(pop ? `Popped ${ref}.` : `Applied ${ref}.`);
+  });
+}
+
+export async function dropStash(ref?: string) {
+  ref ??= (await chooseStash("Drop Stash")) ?? undefined;
+  if (!ref) return;
+  const entry = useRepo.getState().stashes.find((s) => s.ref === ref);
+  const ok = await ask(`Drop ${ref}${entry ? ` "${entry.message}"` : ""}?\n\nThis can't be undone.`, {
+    title: "Drop Stash",
+    kind: "warning",
+    okLabel: "Drop",
+    cancelLabel: "Cancel",
+  });
+  if (!ok) return;
+  await withBusy("Dropping stash…", async (root) => {
+    await git.stashDrop(root, ref);
+    useRepo.getState().toast(`Dropped ${ref}.`);
   });
 }

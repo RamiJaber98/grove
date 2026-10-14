@@ -290,3 +290,31 @@ button.status-item:hover { background: rgba(255, 255, 255, .14); }
 .toast.error { border-left: 3px solid var(--danger); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* In-app dialogs (text prompt, picker) */
+.dialog-backdrop {
+  position: fixed; inset: 0; z-index: 40; display: flex; justify-content: center; align-items: flex-start;
+  padding: 72px 16px 16px; background: rgba(0, 0, 0, .28);
+}
+.dialog {
+  width: min(520px, 100%); padding: 14px; border-radius: 10px;
+  background: var(--bg-raised); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.dialog-title { font-weight: 600; margin-bottom: 8px; }
+.dialog-message { margin: 0 0 10px; color: var(--text-muted); }
+.dialog-input {
+  width: 100%; height: 32px; padding: 0 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; user-select: text;
+}
+.dialog-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.dialog-input[aria-invalid="true"] { outline-color: var(--danger); }
+.dialog-error { margin-top: 6px; color: var(--danger); font-size: 12px; }
+.dialog-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.pick-list { max-height: 320px; overflow-y: auto; margin-top: 8px; }
+.pick-item {
+  display: flex; align-items: baseline; gap: 10px; padding: 6px 10px; border-radius: var(--radius); cursor: pointer;
+}
+.pick-item.active { background: var(--accent); color: var(--accent-text); }
+.pick-label { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-detail { min-width: 0; font-size: 12px; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-empty { padding: 10px; color: var(--text-muted); }
