@@ -59,6 +59,12 @@ pub fn run() {
             commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
+            // File panel context menu
+            commands::gitignore_add,
+            commands::take_side,
+            commands::stash_branch,
+            commands::reveal_repo_file,
+            commands::open_in_editor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

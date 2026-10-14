@@ -4,6 +4,7 @@
 
 pub mod commit;
 pub mod diff;
+pub mod files;
 pub mod log;
 pub mod ops;
 pub mod refs;

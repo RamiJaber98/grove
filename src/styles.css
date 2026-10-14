@@ -402,3 +402,14 @@ kbd {
 .about { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0 4px; }
 .about-name { font-size: 16px; font-weight: 600; }
 .about p { margin: 6px 0 0; }
+
+/* File panel: multi-select, keyboard focus, context menu */
+.groups:focus { outline: none; }
+.file.current { box-shadow: inset 2px 0 var(--accent); }
+.groups:focus-within .file.selected { background: color-mix(in srgb, var(--accent) 22%, var(--bg-panel)); }
+.context-menu { position: fixed; right: auto; width: auto; min-width: 200px; max-width: 320px; }
+.context-menu .dropdown-item { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.context-menu .dropdown-item:focus-visible { outline: none; background: var(--accent); color: var(--accent-text); }
+.context-menu .dropdown-item.danger:focus-visible { background: var(--danger); color: #fff; }
+.dropdown-item:disabled { opacity: .45; cursor: default; background: none; color: inherit; }
+.context-separator { height: 1px; margin: 4px 2px; background: var(--border); }

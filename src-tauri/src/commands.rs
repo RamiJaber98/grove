@@ -274,3 +274,30 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// File panel context menu: .gitignore, conflict sides, stash branch, OS hand-offs.
+
+#[tauri::command]
+pub async fn gitignore_add(root: String, patterns: Vec<String>) -> GitResult<usize> {
+    blocking(move || git::files::add_to_gitignore(Path::new(&root), &patterns)).await
+}
+
+#[tauri::command]
+pub async fn take_side(root: String, paths: Vec<String>, side: git::files::Side) -> GitResult<()> {
+    blocking(move || git::files::take_side(Path::new(&root), &paths, side)).await
+}
+
+#[tauri::command]
+pub async fn stash_branch(root: String, name: String, stash_ref: String) -> GitResult<()> {
+    blocking(move || git::files::stash_branch(Path::new(&root), &name, &stash_ref)).await
+}
+
+#[tauri::command]
+pub fn reveal_repo_file(app: AppHandle, root: String, path: String) -> GitResult<()> {
+    crate::system::reveal_repo_file(&app, Path::new(&root), &path)
+}
+
+#[tauri::command]
+pub fn open_in_editor(app: AppHandle, root: String, paths: Vec<String>) -> GitResult<bool> {
+    crate::system::open_in_editor(&app, Path::new(&root), &paths)
+}
