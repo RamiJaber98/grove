@@ -274,3 +274,20 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// Interactive rebase.
+
+#[tauri::command]
+pub async fn rebase_plan(root: String, base: String) -> GitResult<git::rebase::RebasePlan> {
+    blocking(move || git::rebase::plan(Path::new(&root), &base)).await
+}
+
+#[tauri::command]
+pub async fn start_interactive_rebase(
+    root: String,
+    base: String,
+    steps: Vec<git::rebase::Step>,
+    autostash: bool,
+) -> GitResult<git::rebase::RebaseOutcome> {
+    blocking(move || git::rebase::start(Path::new(&root), &base, &steps, autostash)).await
+}

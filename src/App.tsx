@@ -10,6 +10,7 @@ import Workspace from "./components/Workspace";
 import Toasts from "./components/Toasts";
 import Dialog from "./components/Dialog";
 import Panels from "./components/Panels";
+import RebaseEditor from "./components/RebaseEditor";
 
 export default function App() {
   const repo = useRepo((s) => s.repo);
@@ -64,6 +65,7 @@ export default function App() {
     <>
       {repo ? <Workspace /> : <Welcome />}
       <Panels />
+      <RebaseEditor />
       <Dialog />
       <Toasts />
     </>

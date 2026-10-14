@@ -6,6 +6,7 @@ import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
+import { openInteractiveRebase } from "./rebase";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -149,6 +150,9 @@ export async function runCommand(id: string) {
     case "edit_gitignore":
       return repoActions.editGitignore();
   }
+
+  // Interactive rebase
+  if (id === "interactive_rebase") return openInteractiveRebase();
 
   s.toast(`Unknown command: ${id}`, "error");
 }

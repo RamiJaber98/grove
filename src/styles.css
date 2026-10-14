@@ -402,3 +402,45 @@ kbd {
 .about { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0 4px; }
 .about-name { font-size: 16px; font-weight: 600; }
 .about p { margin: 6px 0 0; }
+
+/* Interactive rebase editor */
+.rebase-dialog { width: min(860px, 100%); max-height: calc(100vh - 100px); display: flex; flex-direction: column; overflow-y: auto; }
+.rb-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); max-height: 46vh; overflow-y: auto; flex: none; }
+.rb-item + .rb-item { border-top: 1px solid var(--border); }
+.rb-row { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 6px; white-space: nowrap; }
+.rb-row:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.rb-row.dragging { background: var(--bg-active); }
+.rb-grip { flex: none; cursor: grab; color: var(--text-muted); padding: 0 2px; touch-action: none; user-select: none; letter-spacing: -2px; }
+.rb-row.dragging .rb-grip { cursor: grabbing; }
+.rb-grip-inline { letter-spacing: -2px; }
+.rb-action {
+  flex: none; width: 84px; height: 24px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font: 12px var(--font);
+}
+.rb-fold { flex: none; color: var(--text-muted); }
+.rb-hash { flex: none; font: 12px var(--mono); color: var(--text-muted); }
+.rb-subject { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rb-meta { flex: 0 1 180px; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--text-muted); }
+.rb-pushed, .rb-tag {
+  flex: none; padding: 0 6px; height: 18px; line-height: 16px; border-radius: 9px; font-size: 11px; border: 1px solid currentColor;
+}
+.rb-pushed { color: var(--warn); }
+.rb-tag { color: var(--text-muted); }
+.rb-move { flex: none; display: flex; }
+.rb-move .icon-btn { width: 22px; height: 22px; }
+.rb-drop .rb-subject, .rb-drop .rb-hash { text-decoration: line-through; opacity: .55; }
+.rb-squash .rb-action, .rb-fixup .rb-action { color: var(--kind-M); }
+.rb-reword .rb-action, .rb-edit .rb-action { color: var(--accent); }
+.rb-drop .rb-action { color: var(--danger); }
+.rb-message { padding: 4px 8px 8px 38px; }
+.rb-message-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.rb-textarea {
+  width: 100%; resize: vertical; padding: 6px 8px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font: 12px/1.5 var(--mono); user-select: text;
+}
+.rb-textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.rb-preview { margin-top: 4px; }
+.rb-preview .settings-section { margin-top: 10px; }
+.rb-result { display: flex; align-items: center; gap: 8px; height: 22px; font-size: 12px; white-space: nowrap; }
+.rb-warning { margin-top: 6px; color: var(--warn); font-size: 12px; }
+.rb-autostash { margin-top: 10px; color: var(--text); }

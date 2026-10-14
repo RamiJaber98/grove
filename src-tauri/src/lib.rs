@@ -59,6 +59,9 @@ pub fn run() {
             commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
+            // Interactive rebase
+            commands::rebase_plan,
+            commands::start_interactive_rebase,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

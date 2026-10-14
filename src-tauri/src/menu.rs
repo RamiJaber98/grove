@@ -116,6 +116,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .separator()
         .item(&item(app, "merge_branch", "Merge Into Current…", None)?)
         .item(&item(app, "rebase_branch", "Rebase Current Onto…", None)?)
+        .item(&item(app, "interactive_rebase", "Interactive Rebase…", None)?)
         .separator()
         .item(&item(app, "delete_branch", "Delete Branch…", None)?)
         .build()?;
