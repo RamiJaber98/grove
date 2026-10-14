@@ -8,7 +8,7 @@
 //! making the window 20px shorter on every launch.
 
 use tauri::menu::{Menu, MenuEvent, MenuItem, MenuItemBuilder, SubmenuBuilder};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Runtime};
 
 fn item<R: Runtime>(
     app: &AppHandle<R>,
@@ -49,6 +49,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(app, "open_repo", "Open Repository…", Some("CmdOrCtrl+O"))?)
         .item(&item(app, "clone_repo", "Clone Repository…", None)?)
         .item(&item(app, "init_repo", "Initialize Repository…", None)?)
+        // Extras: multiple windows.
+        .item(&item(app, "new_window", "New Window", None)?)
         .separator()
         .item(&item(app, "open_in_explorer", file_manager_label(), None)?)
         .item(&item(app, "open_terminal", "Open Terminal Here", None)?)
@@ -106,6 +108,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(app, "manage_remotes", "Remotes…", None)?)
         .item(&item(app, "edit_gitignore", "Edit .gitignore", None)?)
         .item(&item(app, "edit_git_config", "Git Identity…", None)?)
+        // Extras: worktrees and submodules.
+        .separator()
+        .item(&item(app, "worktrees", "Worktrees…", None)?)
+        .item(&item(app, "submodules", "Submodules…", None)?)
         .build()?;
     menu.append(&repo)?;
 
@@ -118,6 +124,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(app, "rebase_branch", "Rebase Current Onto…", None)?)
         .separator()
         .item(&item(app, "delete_branch", "Delete Branch…", None)?)
+        // Extras: remote branches.
+        .item(&item(app, "delete_remote_branch", "Delete Remote Branch…", None)?)
+        .separator()
+        .item(&item(app, "publish_branch", "Publish Branch To…", None)?)
+        .item(&item(app, "set_upstream", "Set Upstream…", None)?)
         .build()?;
     menu.append(&branch)?;
 
@@ -132,8 +143,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     Ok(menu)
 }
 
+/// With several windows open, only the focused one handles the click.
 pub fn on_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
-    let _ = app.emit("menu", event.id().as_ref());
+    crate::windows::emit_to_focused(app, "menu", event.id().as_ref());
 }
 
 fn file_manager_label() -> &'static str {

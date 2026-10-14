@@ -34,6 +34,9 @@ pub struct Status {
     /// A multi-step operation waiting on the user: "merge", "rebase",
     /// "cherry-pick" or "revert".
     pub operation: Option<String>,
+    /// Changed entries (in any group) that are submodules, so the UI can
+    /// show commits instead of a text diff.
+    pub submodules: Vec<String>,
 }
 
 pub fn status(root: &Path) -> GitResult<Status> {
@@ -123,6 +126,7 @@ pub fn parse(out: &str) -> Status {
                     continue;
                 }
                 push_xy(&mut s, f[0], f[7], None);
+                note_submodule(&mut s, f[1], f[7]);
             }
             // 2 XY sub mH mI mW hH hI Xscore path, then origPath as its own record
             "2" => {
@@ -132,6 +136,7 @@ pub fn parse(out: &str) -> Status {
                     continue;
                 }
                 push_xy(&mut s, f[0], f[8], from);
+                note_submodule(&mut s, f[1], f[8]);
             }
             // u XY sub m1 m2 m3 mW h1 h2 h3 path
             "u" => {
@@ -149,6 +154,13 @@ pub fn parse(out: &str) -> Status {
         list.sort_by(|a, b| a.path.cmp(&b.path));
     }
     s
+}
+
+/// The `sub` field is `N...` for files and `S<c><m><u>` for submodules.
+fn note_submodule(s: &mut Status, sub: &str, path: &str) {
+    if sub.starts_with('S') && !s.submodules.iter().any(|p| p == path) {
+        s.submodules.push(path.to_string());
+    }
 }
 
 fn push_xy(s: &mut Status, xy: &str, path: &str, from: Option<&str>) {
@@ -183,6 +195,7 @@ mod tests {
             "old name.txt",
             "u UU N... 100644 100644 100644 100644 a b c conflict.txt",
             "? untracked.md",
+            "1 .M SC.. 160000 160000 160000 aaa aaa vendor/lib",
             "",
         ]
         .join("\0");
@@ -208,8 +221,10 @@ mod tests {
                 change("both.txt", 'M', None),
                 change("src/dir with space/edited.ts", 'M', None),
                 change("untracked.md", 'U', None),
+                change("vendor/lib", 'M', None),
             ]
         );
+        assert_eq!(s.submodules, vec!["vendor/lib".to_string()]);
         assert_eq!(s.conflicts, vec![change("conflict.txt", '!', None)]);
     }
 

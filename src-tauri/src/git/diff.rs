@@ -33,7 +33,7 @@ pub struct FileVersions {
 }
 
 /// Where one side of a diff comes from.
-enum Source<'a> {
+pub(crate) enum Source<'a> {
     /// `<rev>:<path>` from the object database.
     Rev(&'a str, &'a str),
     /// The staged copy (`:<n>:<path>`); stage 2 is "ours" during a merge.
@@ -65,19 +65,36 @@ impl Side {
 }
 
 fn read(root: &Path, source: Source) -> GitResult<Side> {
+    Ok(match read_raw(root, source, MAX_BYTES)? {
+        Raw::Missing => Side::missing(),
+        Raw::TooLarge(size) => Side { exists: true, too_large: true, size, ..Default::default() },
+        Raw::Bytes(bytes) => Side::from_bytes(bytes),
+    })
+}
+
+/// One side's undecoded bytes, shared with viewers that don't want text
+/// (image diffs).
+pub(crate) enum Raw {
+    Missing,
+    TooLarge(usize),
+    Bytes(Vec<u8>),
+}
+
+/// Reads one side as bytes, refusing anything over `max` bytes.
+pub(crate) fn read_raw(root: &Path, source: Source, max: usize) -> GitResult<Raw> {
     let spec = match source {
         Source::Worktree(path) => {
             let full = repo_path(root, path)?;
             if !full.is_file() {
-                return Ok(Side::missing());
+                return Ok(Raw::Missing);
             }
             let size = full.metadata().map(|m| m.len() as usize).unwrap_or(0);
-            if size > MAX_BYTES {
-                return Ok(Side { exists: true, too_large: true, size, ..Default::default() });
+            if size > max {
+                return Ok(Raw::TooLarge(size));
             }
             let bytes = std::fs::read(&full)
                 .map_err(|e| GitError::new(format!("could not read {path}: {e}")))?;
-            return Ok(Side::from_bytes(bytes));
+            return Ok(Raw::Bytes(bytes));
         }
         Source::Rev(rev, path) => format!("{rev}:{path}"),
         Source::Index(0, path) => format!(":{path}"),
@@ -88,8 +105,9 @@ fn read(root: &Path, source: Source) -> GitResult<Side> {
     // here means the object doesn't exist on this side (new file, no commits
     // yet, etc.).
     match run_bytes(root, &["cat-file", "--filters", &spec]) {
-        Ok(bytes) => Ok(Side::from_bytes(bytes)),
-        Err(_) => Ok(Side::missing()),
+        Ok(bytes) if bytes.len() > max => Ok(Raw::TooLarge(bytes.len())),
+        Ok(bytes) => Ok(Raw::Bytes(bytes)),
+        Err(_) => Ok(Raw::Missing),
     }
 }
 

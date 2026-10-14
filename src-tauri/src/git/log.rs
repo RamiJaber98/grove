@@ -33,6 +33,11 @@ pub struct CommitDetail {
     pub message: String,
     /// Changes relative to the first parent (or everything, for a root commit).
     pub files: Vec<FileChange>,
+    /// Signature status; checked here rather than in `log` because
+    /// verification spawns gpg / ssh-keygen.
+    pub signature: super::signature::Signature,
+    /// Paths in `files` that are submodule pointers.
+    pub submodules: Vec<String>,
 }
 
 const RS: char = '\u{1e}'; // record separator between commits
@@ -106,6 +111,8 @@ pub fn detail(root: &Path, hash: &str) -> GitResult<CommitDetail> {
     };
     let mut files = super::stash::parse_name_status(&names);
     files.sort_by(|a, b| a.path.cmp(&b.path));
+    let signature = super::signature::signature(root, f[0]);
+    let submodules = super::submodule::changed_between(root, parents.first().map(String::as_str), f[0]).unwrap_or_default();
 
     Ok(CommitDetail {
         hash: f[0].to_string(),
@@ -117,6 +124,8 @@ pub fn detail(root: &Path, hash: &str) -> GitResult<CommitDetail> {
         commit_time: f[6].parse().unwrap_or(0),
         message: f[7].trim_end().to_string(),
         files,
+        signature,
+        submodules,
     })
 }
 
@@ -201,6 +210,8 @@ mod tests {
         assert_eq!(d.message, "second\n\nWith a body.");
         assert_eq!(d.author, "Tess");
         assert_eq!(d.files.len(), 1);
+        assert_eq!(d.signature.status, 'N');
+        assert!(d.submodules.is_empty());
         let root_detail = detail(root, &entries[1].hash).unwrap();
         assert!(root_detail.parents.is_empty());
         assert_eq!(root_detail.files[0].kind, 'A');

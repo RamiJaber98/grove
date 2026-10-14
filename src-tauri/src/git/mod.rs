@@ -11,6 +11,13 @@ pub mod remote;
 pub mod repo;
 pub mod stash;
 pub mod status;
+// Extras: image diffs, remote branches, signatures, submodules, worktrees, LFS.
+pub mod image;
+pub mod lfs;
+pub mod remote_branch;
+pub mod signature;
+pub mod submodule;
+pub mod worktree;
 
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};

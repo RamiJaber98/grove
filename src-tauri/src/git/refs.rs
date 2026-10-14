@@ -56,7 +56,7 @@ pub enum ResetMode {
 }
 
 /// Rejects empty values and anything git could parse as an option.
-fn plain_arg<'a>(what: &str, value: &'a str) -> GitResult<&'a str> {
+pub(crate) fn plain_arg<'a>(what: &str, value: &'a str) -> GitResult<&'a str> {
     let value = value.trim();
     if value.is_empty() {
         return Err(GitError::new(format!("Enter a {what}.")));

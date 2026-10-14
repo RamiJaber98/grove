@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the main window",
-  "windows": ["main"],
+  "description": "Permissions for the main window and extra grove-N windows",
+  "windows": ["main", "grove-*"],
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
