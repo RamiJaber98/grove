@@ -64,11 +64,15 @@ useRepo.subscribe((s, prev) => {
 });
 
 // Other parts of the UI (e.g. file context menus) open these views by event,
-// with the repo-relative path as the detail.
+// with the repo-relative path as the detail. preventDefault() tells the
+// sender the event was handled.
 function onPathEvent(open: (path: string) => void) {
   return (e: Event) => {
     const path = (e as CustomEvent<unknown>).detail;
-    if (typeof path === "string" && path && useRepo.getState().repo) open(path);
+    if (typeof path === "string" && path && useRepo.getState().repo) {
+      e.preventDefault();
+      open(path);
+    }
   };
 }
 window.addEventListener("grove:file-history", onPathEvent((p) => openFileHistory(p)));

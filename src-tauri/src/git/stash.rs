@@ -134,7 +134,7 @@ pub fn drop_stash(root: &Path, r#ref: &str) -> GitResult<()> {
 }
 
 /// Only accept `stash@{N}`, so a crafted ref can't become a git option.
-fn check_ref(r#ref: &str) -> GitResult<()> {
+pub(super) fn check_ref(r#ref: &str) -> GitResult<()> {
     let ok = r#ref
         .strip_prefix("stash@{")
         .and_then(|r| r.strip_suffix('}'))

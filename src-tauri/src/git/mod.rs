@@ -6,6 +6,7 @@ pub mod blame;
 pub mod commit;
 pub mod diff;
 pub mod file_log;
+pub mod files;
 pub mod log;
 pub mod ops;
 pub mod refs;

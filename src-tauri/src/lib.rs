@@ -62,6 +62,12 @@ pub fn run() {
             // File history and blame.
             commands::file_log,
             commands::blame,
+            // File panel context menu
+            commands::gitignore_add,
+            commands::take_side,
+            commands::stash_branch,
+            commands::reveal_repo_file,
+            commands::open_in_editor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");
