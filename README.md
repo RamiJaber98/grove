@@ -54,6 +54,8 @@ git push origin v0.2.0
 
 Bump `version` in `package.json` and `src-tauri/tauri.conf.json` first. The builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch until code signing is set up.
 
+See [docs/RELEASING.md](docs/RELEASING.md) for the full checklist, code signing and enabling auto-update.
+
 ## Layout
 
 ```
