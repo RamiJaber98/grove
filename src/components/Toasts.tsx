@@ -6,7 +6,7 @@ export default function Toasts() {
   return (
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`toast ${t.kind}`} onClick={() => dismiss(t.id)}>
+        <div key={t.id} role="status" className={`toast ${t.kind}`} onClick={() => dismiss(t.id)}>
           {t.text}
         </div>
       ))}

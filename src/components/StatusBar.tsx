@@ -21,6 +21,7 @@ export default function StatusBar() {
           className="status-item"
           onClick={() => runCommand("sync")}
           title={`${behind} to pull, ${ahead} to push (${upstream})`}
+          aria-label={`Sync with ${upstream}: ${behind} to pull, ${ahead} to push`}
         >
           <ArrowDown size={12} />
           {behind}
@@ -28,7 +29,7 @@ export default function StatusBar() {
           {ahead}
         </button>
       )}
-      <button className="status-item" onClick={() => runCommand("refresh")} title="Refresh (F5)">
+      <button className="status-item" onClick={() => runCommand("refresh")} title="Refresh (F5)" aria-label="Refresh">
         <Refresh />
       </button>
       {busy && (

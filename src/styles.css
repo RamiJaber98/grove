@@ -402,3 +402,12 @@ kbd {
 .about { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0 4px; }
 .about-name { font-size: 16px; font-weight: 600; }
 .about p { margin: 6px 0 0; }
+
+/* Keyboard focus rings (only for keyboard focus, not mouse clicks). */
+.btn:focus-visible,
+.icon-btn:focus-visible,
+.segmented button:focus-visible,
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.primary:focus-visible { outline-offset: 2px; }
+.dropdown-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+button.status-item:focus-visible { outline: 2px solid var(--status-text); outline-offset: -2px; }

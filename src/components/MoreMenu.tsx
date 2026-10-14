@@ -28,6 +28,7 @@ export default function MoreMenu() {
         className={`icon-btn ${open ? "active" : ""}`}
         onClick={() => setOpen(!open)}
         title="More git commands"
+        aria-label="More git commands"
         aria-haspopup="menu"
         aria-expanded={open}
       >
