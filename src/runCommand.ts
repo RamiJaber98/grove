@@ -6,6 +6,7 @@ import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
+import { runExtraCommand } from "./extrasActions";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -35,6 +36,7 @@ export async function runCommand(id: string) {
 
   const s = useRepo.getState();
   if (REMOTE_OPS.has(id)) return actions.remote(id as RemoteOp);
+  if (runExtraCommand(id)) return;
   switch (id) {
     case "commit":
       return actions.commit();

@@ -6,6 +6,7 @@ import { runCommand } from "../runCommand";
 import { useRepo, type Group } from "../store/repo";
 import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
 import MoreMenu from "./MoreMenu";
+import { SubmoduleMark } from "./ExtraDiff";
 
 interface Action {
   title: string;
@@ -249,6 +250,7 @@ function FileGroup({
 }) {
   const selection = useRepo((s) => s.selection);
   const select = useRepo((s) => s.select);
+  const submodules = useRepo((s) => s.submodules);
 
   return (
     <Section title={title} tooltip={tooltip} count={files.length} nested={nested} actions={groupActions}>
@@ -265,6 +267,7 @@ function FileGroup({
             title={f.from ? `${f.from} → ${f.path}` : f.path}
             {...activate(() => select({ group, path: f.path, from: f.from, stashRef }))}
           >
+            {group !== "stash" && submodules.includes(f.path) && <SubmoduleMark />}
             <span className="file-name">{name}</span>
             <span className="file-dir">{dir}</span>
             {fileActions && <Actions actions={fileActions(f)} />}

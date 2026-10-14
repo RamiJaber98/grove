@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { git, isTauri } from "./api/git";
 import { useRepo } from "./store/repo";
 import { runCommand } from "./runCommand";
@@ -11,6 +11,20 @@ import Toasts from "./components/Toasts";
 import Dialog from "./components/Dialog";
 import Panels from "./components/Panels";
 
+declare global {
+  interface Window {
+    /** Set by the backend for extra windows (src-tauri/src/windows.rs): the repo to open, if any. */
+    __GROVE_OPEN__?: string | null;
+  }
+}
+
+/**
+ * Listens only to events addressed to this window. A plain `listen()` would
+ * also receive events meant for other Grove windows.
+ */
+const listenHere = <T,>(event: string, handler: (e: { payload: T }) => void) =>
+  getCurrentWebviewWindow().listen<T>(event, handler);
+
 export default function App() {
   const repo = useRepo((s) => s.repo);
   const theme = useRepo((s) => s.theme);
@@ -20,15 +34,21 @@ export default function App() {
   // Native menu clicks arrive as `menu` events carrying the item id.
   useEffect(() => {
     if (!isTauri) return;
-    const unlisten = listen<string>("menu", (e) => runCommand(e.payload));
+    const unlisten = listenHere<string>("menu", (e) => runCommand(e.payload));
     return () => {
       unlisten.then((f) => f());
     };
   }, []);
 
-  // `grove <path>` opens that folder straight away.
+  // `grove <path>` opens that folder straight away. Extra windows get their
+  // folder from the backend instead, so they don't reopen the launch path.
   useEffect(() => {
     if (!isTauri) return;
+    if (getCurrentWebviewWindow().label !== "main") {
+      const p = window.__GROVE_OPEN__;
+      if (p) useRepo.getState().openRepo(p);
+      return;
+    }
     git.launchPath().then((p) => {
       if (p) useRepo.getState().openRepo(p);
     });
@@ -39,7 +59,7 @@ export default function App() {
   useEffect(() => {
     if (!isTauri || !repo) return;
     const refresh = () => useRepo.getState().refresh();
-    const unlistenChange = listen("repo-changed", refresh);
+    const unlistenChange = listenHere("repo-changed", refresh);
     const unlistenFocus = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
       if (focused) refresh();
     });
