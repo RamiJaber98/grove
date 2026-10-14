@@ -12,6 +12,7 @@ pub mod files;
 pub mod log;
 pub mod ops;
 pub mod rebase;
+pub mod patch;
 pub mod refs;
 pub mod remote;
 pub mod repo;

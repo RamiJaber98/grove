@@ -434,3 +434,16 @@ pub async fn ref_versions(
     blocking(move || git::compare::ref_versions(Path::new(&root), &base, head.as_deref(), &path, from.as_deref()))
         .await
 }
+
+// Partial staging (hunks and lines).
+
+#[tauri::command]
+pub async fn apply_lines(
+    root: String,
+    path: String,
+    from: Option<String>,
+    op: git::patch::PatchOp,
+    lines: git::patch::LineSelection,
+) -> GitResult<()> {
+    blocking(move || git::patch::apply_lines(Path::new(&root), &path, from.as_deref(), op, &lines)).await
+}

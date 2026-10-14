@@ -3,6 +3,7 @@ import { monaco } from "../monaco";
 import { setActiveDiffEditor } from "../diffEditorHandle";
 import { useResolvedTheme } from "../theme";
 import { useRepo } from "../store/repo";
+import { installHunkActions } from "./hunkActions";
 
 export interface DiffStats {
   added: number;
@@ -15,13 +16,15 @@ interface Props {
   original: string;
   modified: string;
   onStats: (stats: DiffStats) => void;
+  /** Offer stage/unstage/discard of hunks and lines (working-tree diffs only). */
+  partialStaging?: boolean;
 }
 
 let modelSeq = 0;
 
 const FONT_FAMILY = '"Cascadia Code", "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace';
 
-export default function DiffEditor({ path, original, modified, onStats }: Props) {
+export default function DiffEditor({ path, original, modified, onStats, partialStaging }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<monaco.editor.IStandaloneDiffEditor | null>(null);
   const shownPath = useRef<string | null>(null);
@@ -75,6 +78,9 @@ export default function DiffEditor({ path, original, modified, onStats }: Props)
       editor.current = null;
     };
   }, []);
+
+  // Partial staging (hunks and lines).
+  useEffect(() => (partialStaging ? installHunkActions(editor.current!) : undefined), [partialStaging]);
 
   // Swap in new content, keeping scroll position when it's the same file
   // being refreshed (e.g. saved in another editor).

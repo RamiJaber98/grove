@@ -84,6 +84,8 @@ pub fn run() {
             commands::search_log,
             commands::compare,
             commands::ref_versions,
+            // Partial staging (hunks and lines)
+            commands::apply_lines,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

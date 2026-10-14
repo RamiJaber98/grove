@@ -10,6 +10,8 @@ import { focusHistorySearch } from "./historySearchHandle";
 import { useRepo } from "./store/repo";
 import { openBlame, openFileHistory, useFileView } from "./store/fileView";
 import { openInteractiveRebase } from "./rebase";
+import type { PatchOp } from "./api/git";
+import { partialStage, type Scope } from "./partialStage";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -165,6 +167,16 @@ export async function runCommand(id: string) {
     // Compare refs
     case "compare_refs":
       return compareRefs();
+    // Partial staging (hunks and lines)
+    case "stage_hunk":
+    case "stage_lines":
+    case "unstage_hunk":
+    case "unstage_lines":
+    case "discard_hunk":
+    case "discard_lines": {
+      const [op, scope] = id.split("_") as [PatchOp, Scope];
+      return partialStage(op, scope);
+    }
   }
 
   // Interactive rebase
