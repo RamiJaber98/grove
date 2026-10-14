@@ -3,6 +3,8 @@ import { useRepo } from "../store/repo";
 import ChangesPanel from "./ChangesPanel";
 import DiffView from "./DiffView";
 import HistoryView from "./HistoryView";
+import FileView from "./FileView";
+import { useFileView } from "../store/fileView";
 import StatusBar from "./StatusBar";
 
 const MIN_PANEL = 260;
@@ -14,6 +16,9 @@ export default function Workspace() {
   const view = useRepo((s) => s.view);
   const setView = useRepo((s) => s.setView);
   const mainRef = useRef<HTMLDivElement>(null);
+  // File History / Blame: a third tab, present once a file has been opened in it.
+  const filePath = useFileView((s) => s.path);
+  const fileMode = useFileView((s) => s.mode);
 
   const startResize = useCallback(
     (e: React.PointerEvent) => {
@@ -53,8 +58,19 @@ export default function Workspace() {
                 {v === "changes" ? "Changes" : "History"}
               </button>
             ))}
+            {filePath && (
+              <button
+                role="tab"
+                aria-selected={view === "file"}
+                className={view === "file" ? "active" : ""}
+                onClick={() => setView("file")}
+                title={filePath}
+              >
+                {fileMode === "blame" ? "Blame" : "File History"}
+              </button>
+            )}
           </nav>
-          {view === "changes" ? <DiffView /> : <HistoryView />}
+          {view === "changes" ? <DiffView /> : view === "history" ? <HistoryView /> : <FileView />}
         </div>
         <div className="splitter" onPointerDown={startResize} role="separator" aria-orientation="vertical" />
         <ChangesPanel width={panelWidth} />

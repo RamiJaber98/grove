@@ -59,6 +59,9 @@ pub fn run() {
             commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
+            // File history and blame.
+            commands::file_log,
+            commands::blame,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

@@ -83,7 +83,7 @@ pub fn log(root: &Path, skip: usize, limit: usize, all: bool) -> GitResult<Vec<L
 }
 
 /// Only full or abbreviated hex hashes are accepted as commit arguments.
-fn check_hash(hash: &str) -> GitResult<&str> {
+pub(crate) fn check_hash(hash: &str) -> GitResult<&str> {
     if (4..=64).contains(&hash.len()) && hash.chars().all(|c| c.is_ascii_hexdigit()) {
         Ok(hash)
     } else {

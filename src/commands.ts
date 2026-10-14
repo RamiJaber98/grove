@@ -91,6 +91,10 @@ export const COMMANDS: Record<string, CommandInfo> = {
   edit_gitignore: { label: "Edit .gitignore" },
   edit_git_config: { label: "Git Identity" },
 
+  // File history and blame (act on the file selected in the diff)
+  file_history: { label: "File History" },
+  blame_file: { label: "Blame" },
+
   // Help
   shortcuts: { label: "Keyboard Shortcuts" },
   about: { label: "About Grove" },

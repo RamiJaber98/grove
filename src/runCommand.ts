@@ -6,6 +6,7 @@ import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
+import { openBlame, openFileHistory, useFileView } from "./store/fileView";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -148,6 +149,13 @@ export async function runCommand(id: string) {
       return repoActions.openTerminal();
     case "edit_gitignore":
       return repoActions.editGitignore();
+    // File history and blame: the diff's file, else the one already open there.
+    case "file_history":
+    case "blame_file": {
+      const path = s.selection?.path ?? useFileView.getState().path;
+      if (!path) return s.toast("Select a file first.");
+      return id === "file_history" ? openFileHistory(path) : openBlame(path);
+    }
   }
 
   s.toast(`Unknown command: ${id}`, "error");
