@@ -154,8 +154,23 @@ code { font-family: var(--mono); font-size: 12px; }
   color: var(--text-muted); cursor: pointer; font-size: 12px;
 }
 .segmented button.active { background: var(--bg-raised); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
-.diff-body { flex: 1; min-height: 0; position: relative; }
-.empty { height: 100%; display: grid; place-items: center; color: var(--text-muted); }
+.diff-tag {
+  flex: none; padding: 1px 6px; border-radius: 4px; background: var(--bg-hover);
+  color: var(--text-muted); font-size: 11px;
+}
+.diff-stats { flex: none; display: inline-flex; gap: 6px; font: 12px var(--mono); }
+.diff-stats .added { color: var(--kind-A); }
+.diff-stats .removed { color: var(--kind-D); }
+.diff-nav { display: inline-flex; gap: 2px; }
+.diff-nav .icon-btn:disabled { opacity: .4; cursor: default; background: none; }
+.diff-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.diff-notice {
+  flex: none; padding: 6px 12px; font-size: 12px; color: var(--text-muted);
+  background: var(--bg-panel); border-bottom: 1px solid var(--border);
+}
+.monaco-host { flex: 1; min-height: 0; user-select: text; }
+.empty { flex: 1; height: 100%; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--text-muted); }
+.empty.error { color: var(--danger); user-select: text; }
 
 /* Right panel */
 .panel {

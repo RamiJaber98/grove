@@ -14,5 +14,7 @@ export default defineConfig({
   build: {
     target: "es2022",
     outDir: "dist",
+    // Monaco is one ~3 MB chunk, loaded lazily from disk; size isn't a concern.
+    chunkSizeWarningLimit: 4096,
   },
 });

@@ -20,7 +20,9 @@ export const COMMANDS: Record<string, CommandInfo> = {
   close_repo: { label: "Close Repository" },
 
   // Edit / View
-  find: { label: "Find in Diff", phase: 3 },
+  find: { label: "Find in Diff" },
+  next_change: { label: "Next Change" },
+  prev_change: { label: "Previous Change" },
   diff_side_by_side: { label: "Side-by-Side Diff" },
   diff_inline: { label: "Inline Diff" },
   toggle_whitespace: { label: "Ignore Whitespace" },

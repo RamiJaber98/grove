@@ -2,11 +2,12 @@
 //! Grove goes through `run`/`run_with_stdin`, so behaviour matches the
 //! terminal exactly (credentials, hooks, config, SSH keys).
 
+pub mod diff;
 pub mod ops;
 pub mod status;
 
 use std::io::Write;
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use serde::Serialize;
@@ -55,8 +56,12 @@ fn spawn_error(e: std::io::Error) -> GitError {
 }
 
 fn finish(args: &[&str], output: std::process::Output) -> GitResult<String> {
+    finish_bytes(args, output).map(|b| String::from_utf8_lossy(&b).into_owned())
+}
+
+fn finish_bytes(args: &[&str], output: std::process::Output) -> GitResult<Vec<u8>> {
     if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+        Ok(output.stdout)
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         Err(GitError::new(if stderr.is_empty() {
@@ -74,6 +79,15 @@ pub fn run(cwd: &Path, args: &[&str]) -> GitResult<String> {
         .output()
         .map_err(spawn_error)?;
     finish(args, output)
+}
+
+/// Like `run`, but returns raw stdout (file contents may not be UTF-8).
+pub fn run_bytes(cwd: &Path, args: &[&str]) -> GitResult<Vec<u8>> {
+    let output = command(cwd, args)
+        .stdin(Stdio::null())
+        .output()
+        .map_err(spawn_error)?;
+    finish_bytes(args, output)
 }
 
 /// Like `run`, but writes `input` to git's stdin. Used with
@@ -105,6 +119,16 @@ pub fn nul_paths(paths: &[String]) -> Vec<u8> {
         buf.push(0);
     }
     buf
+}
+
+/// Joins a repo-relative path onto `root`, refusing anything that could
+/// escape the working tree (`..`, absolute paths, drive prefixes).
+pub fn repo_path(root: &Path, rel: &str) -> GitResult<PathBuf> {
+    let rel_path = Path::new(rel);
+    if rel.is_empty() || !rel_path.components().all(|c| matches!(c, Component::Normal(_))) {
+        return Err(GitError::new(format!("{rel} is not a path inside the repository")));
+    }
+    Ok(root.join(rel_path))
 }
 
 #[derive(Debug, Serialize)]

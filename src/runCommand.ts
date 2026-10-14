@@ -1,5 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { COMMANDS } from "./commands";
+import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
 
 export async function pickAndOpenRepo() {
@@ -24,6 +25,16 @@ export async function runCommand(id: string) {
       return s.unstageAll();
     case "discard_all":
       return s.discard(s.changes);
+    case "find": {
+      const editor = getActiveDiffEditor()?.getModifiedEditor();
+      if (!editor) return s.toast("Open a file's diff to search it.");
+      editor.focus();
+      return editor.trigger("grove", "actions.find", null);
+    }
+    case "next_change":
+      return getActiveDiffEditor()?.goToDiff("next");
+    case "prev_change":
+      return getActiveDiffEditor()?.goToDiff("previous");
     case "diff_side_by_side":
       return s.setDiffMode("side-by-side");
     case "diff_inline":

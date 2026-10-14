@@ -33,6 +33,19 @@ export interface StashEntry {
   files: FileChange[];
 }
 
+export interface Side {
+  exists: boolean;
+  binary: boolean;
+  tooLarge: boolean;
+  size: number;
+  text: string;
+}
+
+export interface FileVersions {
+  original: Side;
+  modified: Side;
+}
+
 export interface GitError {
   message: string;
 }
@@ -56,4 +69,6 @@ export const git = {
   unstageAll: (root: string) => invoke<void>("unstage_all", { root }),
   discard: (root: string, tracked: string[], untracked: string[]) =>
     invoke<void>("discard", { root, tracked, untracked }),
+  fileVersions: (root: string, group: string, path: string, from?: string, stashRef?: string) =>
+    invoke<FileVersions>("file_versions", { root, group, path, from, stashRef }),
 };

@@ -78,6 +78,8 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let view = SubmenuBuilder::new(app, "View")
         .item(&item(app, "diff_side_by_side", "Side-by-Side Diff", None)?)
         .item(&item(app, "diff_inline", "Inline Diff", None)?)
+        .item(&item(app, "next_change", "Next Change", Some("F7"))?)
+        .item(&item(app, "prev_change", "Previous Change", Some("Shift+F7"))?)
         .separator()
         .item(&item(app, "toggle_whitespace", "Ignore Whitespace", None)?)
         .item(&item(app, "toggle_word_wrap", "Word Wrap", Some("Alt+Z"))?)

@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, State};
 
+use crate::git::diff::FileVersions;
 use crate::git::status::Status;
 use crate::git::{self, ops, GitError, GitResult, RepoInfo};
 use crate::watcher::RepoWatcher;
@@ -66,4 +67,18 @@ pub async fn unstage_all(root: String) -> GitResult<()> {
 #[tauri::command]
 pub async fn discard(root: String, tracked: Vec<String>, untracked: Vec<String>) -> GitResult<()> {
     blocking(move || ops::discard(Path::new(&root), &tracked, &untracked)).await
+}
+
+#[tauri::command]
+pub async fn file_versions(
+    root: String,
+    group: String,
+    path: String,
+    from: Option<String>,
+    stash_ref: Option<String>,
+) -> GitResult<FileVersions> {
+    blocking(move || {
+        git::diff::versions(Path::new(&root), &group, &path, from.as_deref(), stash_ref.as_deref())
+    })
+    .await
 }

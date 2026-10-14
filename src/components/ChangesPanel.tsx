@@ -205,7 +205,7 @@ function FileGroup({
             key={f.path}
             className={`file ${selected ? "selected" : ""} ${f.kind === "D" ? "deleted" : ""}`}
             title={f.from ? `${f.from} → ${f.path}` : f.path}
-            {...activate(() => select({ group, path: f.path, stashRef }))}
+            {...activate(() => select({ group, path: f.path, from: f.from, stashRef }))}
           >
             <span className="file-name">{name}</span>
             <span className="file-dir">{dir}</span>

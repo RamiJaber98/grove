@@ -4,9 +4,9 @@
 //! them. They're passed over stdin with `--literal-pathspecs`, so names
 //! containing `*`, `[` or spaces are never treated as globs.
 
-use std::path::{Component, Path};
+use std::path::Path;
 
-use super::{nul_paths, run, run_with_stdin, GitError, GitResult};
+use super::{nul_paths, repo_path, run, run_with_stdin, GitError, GitResult};
 
 const PATHSPEC_STDIN: [&str; 2] = ["--pathspec-from-file=-", "--pathspec-file-nul"];
 
@@ -39,12 +39,7 @@ pub fn unstage_all(root: &Path) -> GitResult<()> {
 pub fn discard(root: &Path, tracked: &[String], untracked: &[String]) -> GitResult<()> {
     with_paths(root, &["restore", "--worktree"], tracked)?;
     for p in untracked {
-        let rel = Path::new(p);
-        // Never let a path escape the working tree.
-        if !rel.components().all(|c| matches!(c, Component::Normal(_))) {
-            return Err(GitError::new(format!("refusing to delete {p}: not a repository path")));
-        }
-        let full = root.join(rel);
+        let full = repo_path(root, p)?;
         if full.is_file() || full.is_symlink() {
             std::fs::remove_file(&full)
                 .map_err(|e| GitError::new(format!("could not delete {p}: {e}")))?;

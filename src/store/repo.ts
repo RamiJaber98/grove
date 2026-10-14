@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { errorMessage, git, type FileChange, type RepoInfo, type StashEntry } from "../api/git";
+import { errorMessage, git, type FileChange, type RepoInfo, type StashEntry, type Status } from "../api/git";
 import { loadPref, savePref } from "./prefs";
 
 export type DiffMode = "side-by-side" | "inline";
@@ -10,6 +10,8 @@ export type Group = "conflicts" | "staged" | "changes" | "stash";
 export interface Selection {
   group: Group;
   path: string;
+  /** Original path, for renames. */
+  from?: string;
   /** Set when the file belongs to a stash entry. */
   stashRef?: string;
 }
@@ -38,6 +40,8 @@ interface State {
 
   selection: Selection | null;
   commitMessage: string;
+  /** Bumped on every status load so open diffs know to re-read the file. */
+  statusVersion: number;
 
   diffMode: DiffMode;
   ignoreWhitespace: boolean;
@@ -86,6 +90,21 @@ let rerun = false;
 
 const fileName = (path: string) => path.split("/").pop() ?? path;
 
+/**
+ * Keeps the selected file selected across a status refresh. If it moved
+ * between groups (e.g. it was just staged or unstaged), follow it there.
+ */
+function followSelection(sel: Selection | null, status: Status): Selection | null {
+  if (!sel || sel.group === "stash") return sel;
+  const order: Group[] = [sel.group, "staged", "changes", "conflicts"];
+  for (const group of order) {
+    const list = group === "staged" ? status.staged : group === "changes" ? status.changes : status.conflicts;
+    const file = list.find((f) => f.path === sel.path);
+    if (file) return { group, path: file.path, from: file.from };
+  }
+  return null;
+}
+
 export const useRepo = create<State>((set, get) => {
   async function loadStatus() {
     const repo = get().repo;
@@ -94,16 +113,11 @@ export const useRepo = create<State>((set, get) => {
     // Ignore results for a repo that was closed or switched meanwhile.
     if (get().repo?.root !== repo.root) return;
 
-    const { selection } = get();
-    const lists: Record<Group, FileChange[]> = {
-      conflicts: status.conflicts,
-      staged: status.staged,
-      changes: status.changes,
-      stash: [],
-    };
-    const stillThere =
-      selection && (selection.group === "stash" || lists[selection.group].some((f) => f.path === selection.path));
-    set({ ...status, selection: stillThere ? selection : null });
+    set({
+      ...status,
+      selection: followSelection(get().selection, status),
+      statusVersion: get().statusVersion + 1,
+    });
   }
 
   /** Runs a git mutation, reports failure, and always refreshes afterwards. */
@@ -124,6 +138,7 @@ export const useRepo = create<State>((set, get) => {
     ...EMPTY_STATUS,
     selection: null,
     commitMessage: "",
+    statusVersion: 0,
 
     diffMode: loadPref<DiffMode>("diffMode", "side-by-side"),
     ignoreWhitespace: loadPref("ignoreWhitespace", false),
