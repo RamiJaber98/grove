@@ -200,4 +200,30 @@ export const git = {
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
   openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
+  // Merge conflict editor
+  conflictFile: (root: string, path: string) => invoke<ConflictFile>("conflict_file", { root, path }),
+  /** Writes the resolved text (keeping the file's line endings); `stage` marks it resolved. */
+  saveConflict: (root: string, path: string, content: string, stage: boolean) =>
+    invoke<void>("save_conflict", { root, path, content, stage }),
+  /** Takes one side wholesale (or deletes the file) and stages the result. */
+  resolveConflict: (root: string, path: string, resolution: Resolution) =>
+    invoke<void>("resolve_conflict", { root, path, resolution }),
 };
+
+// Merge conflict editor
+
+/** UU both modified, AA both added, DU deleted by us, UD deleted by them, AU/UA added by one side, DD both deleted. */
+export type ConflictCode = "UU" | "AA" | "DU" | "UD" | "AU" | "UA" | "DD";
+export type Resolution = "ours" | "theirs" | "delete";
+
+export interface ConflictFile {
+  code: ConflictCode;
+  base: Side;
+  ours: Side;
+  theirs: Side;
+  working: Side;
+  /** False when the working file isn't UTF-8 and can't be edited as text. */
+  utf8: boolean;
+  /** Who "ours" and "theirs" are; see sideLabels() in conflicts.ts. */
+  context: import("../conflicts").ConflictContext;
+}

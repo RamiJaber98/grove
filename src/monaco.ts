@@ -22,6 +22,10 @@ import "monaco-editor/features/lineSelection/register";
 import "monaco-editor/features/readOnlyMessage/register";
 import "monaco-editor/features/stickyScroll/register";
 import "monaco-editor/features/gotoLine/register";
+// Merge conflict editor: Accept links above each block, and editing comforts.
+import "monaco-editor/features/codelens/register";
+import "monaco-editor/features/linesOperations/register";
+import "monaco-editor/features/multicursor/register";
 // Syntax highlighting only (Monarch grammars, loaded lazily per language).
 import "monaco-editor/languages/definitions/register.all";
 

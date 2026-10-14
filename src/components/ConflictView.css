@@ -1,0 +1,55 @@
+/* Merge conflict editor. "Current" is green and "Incoming" blue, whichever
+   git side (ours/theirs) that is for the operation in progress. */
+:root {
+  --conflict-current: #2f8a4c;
+  --conflict-incoming: #2b6cd4;
+  --conflict-base: #67707c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --conflict-current: #3fa463;
+    --conflict-incoming: #4f8ff0;
+    --conflict-base: #9298a2;
+  }
+}
+:root[data-theme="dark"] {
+  --conflict-current: #3fa463;
+  --conflict-incoming: #4f8ff0;
+  --conflict-base: #9298a2;
+}
+
+.conflict-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.conflict-toolbar {
+  flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding: 6px 12px;
+  border-bottom: 1px solid var(--border); background: var(--bg-panel); font-size: 12px;
+}
+.conflict-count { font-weight: 600; color: var(--kind-conflict); white-space: nowrap; }
+.conflict-count.done { color: var(--accent); }
+.conflict-legend { display: inline-flex; gap: 10px; min-width: 0; color: var(--text-muted); overflow: hidden; }
+.conflict-legend > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conflict-legend > span::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 2px; }
+.legend-current::before { background: var(--conflict-current); }
+.legend-incoming::before { background: var(--conflict-incoming); }
+.conflict-spacer { flex: 1; }
+.conflict-notice { color: var(--warn); }
+.link-btn { border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* Editor line highlights (Monaco decoration classes). */
+.conflict-current { background: color-mix(in srgb, var(--conflict-current) 14%, transparent); }
+.conflict-current-header { background: color-mix(in srgb, var(--conflict-current) 32%, transparent); }
+.conflict-incoming { background: color-mix(in srgb, var(--conflict-incoming) 14%, transparent); }
+.conflict-incoming-header { background: color-mix(in srgb, var(--conflict-incoming) 32%, transparent); }
+.conflict-base { background: color-mix(in srgb, var(--conflict-base) 12%, transparent); }
+.conflict-base-header { background: color-mix(in srgb, var(--conflict-base) 26%, transparent); }
+.conflict-separator { background: color-mix(in srgb, var(--conflict-base) 20%, transparent); }
+.conflict-marker-hint { color: var(--text-muted); font-style: italic; opacity: .8; }
+
+/* Whole-file choices: binary, delete/modify. */
+.conflict-card {
+  max-width: 520px; margin: auto; padding: 20px 24px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-raised); text-align: center; user-select: text;
+}
+.conflict-card h3 { margin: 0 0 8px; font-size: 14px; }
+.conflict-card p { margin: 0 0 6px; color: var(--text-muted); font-size: 12px; }
+.conflict-card .conflict-choices { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.conflict-wrap { flex: 1; min-height: 0; display: flex; padding: 16px; overflow: auto; }

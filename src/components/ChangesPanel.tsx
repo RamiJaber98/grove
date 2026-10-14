@@ -6,6 +6,7 @@ import { runCommand } from "../runCommand";
 import { useRepo, type Group } from "../store/repo";
 import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
 import MoreMenu from "./MoreMenu";
+import { markResolved } from "../conflictActions";
 
 interface Action {
   title: string;
@@ -109,7 +110,7 @@ export default function ChangesPanel({ width }: { width: number }) {
             group="conflicts"
             title="Merge Changes"
             files={conflicts}
-            fileActions={(f) => [{ title: "Mark as Resolved (Stage)", icon: <Plus />, run: () => stage([f]) }]}
+            fileActions={(f) => [{ title: "Mark as Resolved (Stage)", icon: <Plus />, run: () => markResolved(f) }]}
           />
         )}
         <FileGroup

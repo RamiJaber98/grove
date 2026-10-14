@@ -274,3 +274,20 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// Merge conflict editor.
+
+#[tauri::command]
+pub async fn conflict_file(root: String, path: String) -> GitResult<git::conflict::ConflictFile> {
+    blocking(move || git::conflict::read(Path::new(&root), &path)).await
+}
+
+#[tauri::command]
+pub async fn save_conflict(root: String, path: String, content: String, stage: bool) -> GitResult<()> {
+    blocking(move || git::conflict::save(Path::new(&root), &path, &content, stage)).await
+}
+
+#[tauri::command]
+pub async fn resolve_conflict(root: String, path: String, resolution: git::conflict::Resolution) -> GitResult<()> {
+    blocking(move || git::conflict::resolve(Path::new(&root), &path, resolution)).await
+}

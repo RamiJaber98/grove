@@ -59,6 +59,10 @@ pub fn run() {
             commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
+            // Merge conflict editor
+            commands::conflict_file,
+            commands::save_conflict,
+            commands::resolve_conflict,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");
