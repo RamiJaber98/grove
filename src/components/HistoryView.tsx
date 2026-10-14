@@ -86,7 +86,7 @@ export default function HistoryView() {
           >
             <GraphCell row={graph[i]} width={graphWidth} merge={c.parents.length > 1} />
             <span className="commit-subject">
-              {c.refs.map((r) => (
+              {c.refs.filter((r) => !r.endsWith("/HEAD")).map((r) => (
                 <RefBadge key={r} name={r} />
               ))}
               {c.subject}

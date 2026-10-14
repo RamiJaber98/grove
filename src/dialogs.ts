@@ -73,3 +73,8 @@ export function pick<T>(opts: { title: string; placeholder?: string; items: Pick
     show({ kind: "pick", ...opts, resolve: resolve as (v: unknown) => void }),
   );
 }
+
+/** Larger app panels shown as modals (one at a time). */
+export type Panel = "settings" | "shortcuts" | "about";
+export const usePanel = create<{ panel: Panel | null }>(() => ({ panel: null }));
+export const openPanel = (panel: Panel | null) => usePanel.setState({ panel });

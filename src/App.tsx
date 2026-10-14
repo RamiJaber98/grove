@@ -4,14 +4,18 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { git, isTauri } from "./api/git";
 import { useRepo } from "./store/repo";
 import { runCommand } from "./runCommand";
+import { installShortcuts } from "./shortcuts";
 import Welcome from "./components/Welcome";
 import Workspace from "./components/Workspace";
 import Toasts from "./components/Toasts";
 import Dialog from "./components/Dialog";
+import Panels from "./components/Panels";
 
 export default function App() {
   const repo = useRepo((s) => s.repo);
   const theme = useRepo((s) => s.theme);
+
+  useEffect(installShortcuts, []);
 
   // Native menu clicks arrive as `menu` events carrying the item id.
   useEffect(() => {
@@ -59,6 +63,7 @@ export default function App() {
   return (
     <>
       {repo ? <Workspace /> : <Welcome />}
+      <Panels />
       <Dialog />
       <Toasts />
     </>

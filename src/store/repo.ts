@@ -52,6 +52,7 @@ interface State {
   diffMode: DiffMode;
   ignoreWhitespace: boolean;
   wordWrap: boolean;
+  fontSize: number;
   theme: Theme;
   panelWidth: number;
   recent: string[];
@@ -71,6 +72,7 @@ interface State {
   setDiffMode: (m: DiffMode) => void;
   toggleWhitespace: () => void;
   toggleWordWrap: () => void;
+  setFontSize: (size: number) => void;
   setTheme: (t: Theme) => void;
   setPanelWidth: (w: number) => void;
   toast: (text: string, kind?: Toast["kind"]) => void;
@@ -160,6 +162,7 @@ export const useRepo = create<State>((set, get) => {
     diffMode: loadPref<DiffMode>("diffMode", "side-by-side"),
     ignoreWhitespace: loadPref("ignoreWhitespace", false),
     wordWrap: loadPref("wordWrap", false),
+    fontSize: loadPref("fontSize", 13),
     theme: loadPref<Theme>("theme", "system"),
     panelWidth: loadPref("panelWidth", 340),
     recent: loadPref<string[]>("recent", []),
@@ -253,6 +256,10 @@ export const useRepo = create<State>((set, get) => {
       const wordWrap = !get().wordWrap;
       savePref("wordWrap", wordWrap);
       set({ wordWrap });
+    },
+    setFontSize(fontSize) {
+      savePref("fontSize", fontSize);
+      set({ fontSize });
     },
     setTheme(theme) {
       savePref("theme", theme);

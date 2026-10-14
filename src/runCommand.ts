@@ -1,8 +1,9 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import * as actions from "./actions";
 import * as refs from "./refActions";
+import * as repoActions from "./repoActions";
+import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
-import { COMMANDS } from "./commands";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
 
@@ -22,8 +23,16 @@ const REMOTE_OPS = new Set<string>([
   "sync",
 ]);
 
+let last = { id: "", at: 0 };
+
 /** Single entry point for native menu clicks, the ⋯ menu and panel buttons. */
 export async function runCommand(id: string) {
+  // A shortcut can arrive both from the native menu and the page's key
+  // handler; run it once.
+  const now = performance.now();
+  if (last.id === id && now - last.at < 150) return;
+  last = { id, at: now };
+
   const s = useRepo.getState();
   if (REMOTE_OPS.has(id)) return actions.remote(id as RemoteOp);
   switch (id) {
@@ -123,13 +132,23 @@ export async function runCommand(id: string) {
     case "theme_dark":
       return s.setTheme("dark");
     case "about":
-      return s.toast("Grove 0.1.0 — a lightweight git GUI");
+      return openPanel("about");
+    case "settings":
+    case "edit_git_config":
+      return openPanel("settings");
+    case "shortcuts":
+      return openPanel("shortcuts");
+    case "clone_repo":
+      return repoActions.cloneRepo();
+    case "init_repo":
+      return repoActions.initRepo();
+    case "open_in_explorer":
+      return repoActions.revealRepo();
+    case "open_terminal":
+      return repoActions.openTerminal();
+    case "edit_gitignore":
+      return repoActions.editGitignore();
   }
 
-  const cmd = COMMANDS[id];
-  if (cmd?.phase) {
-    s.toast(`${cmd.label} isn't wired up yet (planned for phase ${cmd.phase}).`);
-  } else {
-    s.toast(`Unknown command: ${id}`, "error");
-  }
+  s.toast(`Unknown command: ${id}`, "error");
 }

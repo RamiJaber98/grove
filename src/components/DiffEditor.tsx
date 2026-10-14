@@ -31,6 +31,7 @@ export default function DiffEditor({ path, original, modified, onStats }: Props)
   const diffMode = useRepo((s) => s.diffMode);
   const ignoreWhitespace = useRepo((s) => s.ignoreWhitespace);
   const wordWrap = useRepo((s) => s.wordWrap);
+  const fontSize = useRepo((s) => s.fontSize);
   const theme = useResolvedTheme();
 
   // Create once; dispose with the component.
@@ -47,8 +48,6 @@ export default function DiffEditor({ path, original, modified, onStats }: Props)
       scrollBeyondLastLine: false,
       stickyScroll: { enabled: true },
       fontFamily: FONT_FAMILY,
-      fontSize: 13,
-      lineHeight: 20,
       maxComputationTime: 5000,
       domReadOnly: true,
     });
@@ -107,8 +106,10 @@ export default function DiffEditor({ path, original, modified, onStats }: Props)
       ignoreTrimWhitespace: ignoreWhitespace,
       wordWrap: wordWrap ? "on" : "off",
       diffWordWrap: wordWrap ? "on" : "off",
+      fontSize,
+      lineHeight: Math.round(fontSize * 1.55),
     });
-  }, [diffMode, ignoreWhitespace, wordWrap]);
+  }, [diffMode, ignoreWhitespace, wordWrap, fontSize]);
 
   useEffect(() => {
     monaco.editor.setTheme(theme === "dark" ? "grove-dark" : "grove-light");

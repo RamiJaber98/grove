@@ -81,6 +81,13 @@ export interface CommitDetail {
   files: FileChange[];
 }
 
+export interface Identity {
+  name: string;
+  email: string;
+  /** True when this repo overrides the global identity. */
+  local: boolean;
+}
+
 export interface StashEntry {
   /** e.g. "stash@{0}" */
   ref: string;
@@ -184,4 +191,13 @@ export const git = {
   cherryPick: (root: string, hash: string) => invoke<void>("cherry_pick", { root, hash }),
   revert: (root: string, hash: string) => invoke<void>("revert", { root, hash }),
   checkoutDetached: (root: string, hash: string) => invoke<void>("checkout_detached", { root, hash }),
+  /** Returns the path of the new clone. */
+  cloneRepo: (url: string, parent: string) => invoke<string>("clone_repo", { url, parent }),
+  initRepo: (path: string) => invoke<void>("init_repo", { path }),
+  identity: (root: string) => invoke<Identity>("identity", { root }),
+  setIdentity: (root: string, name: string, email: string, global: boolean) =>
+    invoke<void>("set_identity", { root, name, email, global }),
+  reveal: (path: string) => invoke<void>("reveal", { path }),
+  openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
+  openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
 };

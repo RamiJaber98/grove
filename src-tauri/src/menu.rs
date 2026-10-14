@@ -46,7 +46,9 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .item(&item(app, "init_repo", "Initialize Repository…", None)?)
         .separator()
         .item(&item(app, "open_in_explorer", reveal_label(), None)?)
-        .item(&item(app, "open_terminal", "Open Terminal Here", None)?);
+        .item(&item(app, "open_terminal", "Open Terminal Here", None)?)
+        .separator()
+        .item(&item(app, "close_repo", "Close Repository", Some("CmdOrCtrl+W"))?);
     #[cfg(not(target_os = "macos"))]
     {
         file = file
@@ -115,8 +117,7 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     menu.append(&branch)?;
 
     let mut help = SubmenuBuilder::new(app, "Help")
-        .item(&item(app, "shortcuts", "Keyboard Shortcuts", None)?)
-        .item(&item(app, "check_updates", "Check for Updates…", None)?);
+        .item(&item(app, "shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+/"))?);
     #[cfg(not(target_os = "macos"))]
     {
         help = help.separator().item(&item(app, "about", "About Grove", None)?);

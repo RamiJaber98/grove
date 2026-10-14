@@ -1,22 +1,20 @@
 /**
  * Every user-facing command, keyed by the id used in the native menu
- * (src-tauri/src/menu.rs) and the ⋯ menu. `phase` marks commands that are
- * planned but not wired up yet; running one shows a notice instead.
+ * (src-tauri/src/menu.rs) and the ⋯ menu.
  */
 export interface CommandInfo {
   label: string;
-  phase?: number;
   danger?: boolean;
 }
 
 export const COMMANDS: Record<string, CommandInfo> = {
   // File
   open_repo: { label: "Open Repository…" },
-  clone_repo: { label: "Clone Repository", phase: 8 },
-  init_repo: { label: "Initialize Repository", phase: 8 },
-  open_in_explorer: { label: "Open in File Explorer", phase: 8 },
-  open_terminal: { label: "Open Terminal Here", phase: 8 },
-  settings: { label: "Settings", phase: 8 },
+  clone_repo: { label: "Clone Repository…" },
+  init_repo: { label: "Initialize Repository…" },
+  open_in_explorer: { label: "Open in File Explorer" },
+  open_terminal: { label: "Open Terminal Here" },
+  settings: { label: "Settings" },
   close_repo: { label: "Close Repository" },
 
   // Edit / View
@@ -90,12 +88,11 @@ export const COMMANDS: Record<string, CommandInfo> = {
   reset_hard: { label: "Reset (Hard)…", danger: true },
 
   // Repository
-  edit_gitignore: { label: "Edit .gitignore", phase: 8 },
-  edit_git_config: { label: "Git Identity", phase: 8 },
+  edit_gitignore: { label: "Edit .gitignore" },
+  edit_git_config: { label: "Git Identity" },
 
   // Help
-  shortcuts: { label: "Keyboard Shortcuts", phase: 8 },
-  check_updates: { label: "Check for Updates", phase: 8 },
+  shortcuts: { label: "Keyboard Shortcuts" },
   about: { label: "About Grove" },
 };
 

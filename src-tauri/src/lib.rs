@@ -1,11 +1,14 @@
 mod commands;
 mod git;
 mod menu;
+mod system;
 mod watcher;
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(watcher::RepoWatcher::default())
         .setup(|app| {
             menu::install(app.handle())?;
@@ -51,6 +54,13 @@ pub fn run() {
             commands::cherry_pick,
             commands::revert,
             commands::checkout_detached,
+            commands::clone_repo,
+            commands::init_repo,
+            commands::identity,
+            commands::set_identity,
+            commands::reveal,
+            commands::open_terminal,
+            commands::open_repo_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

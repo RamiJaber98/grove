@@ -6,6 +6,7 @@ use crate::git::diff::FileVersions;
 use crate::git::log::{CommitDetail, LogEntry};
 use crate::git::refs::{Branch, Commit, OperationAction, Remote, ResetMode, Tag};
 use crate::git::remote::RemoteOp;
+use crate::git::repo::Identity;
 use crate::git::stash::{StashEntry, StashMode};
 use crate::git::status::Status;
 use crate::git::{self, ops, GitError, GitResult, RepoInfo};
@@ -235,4 +236,41 @@ pub async fn revert(root: String, hash: String) -> GitResult<()> {
 #[tauri::command]
 pub async fn checkout_detached(root: String, hash: String) -> GitResult<()> {
     blocking(move || git::log::checkout_detached(Path::new(&root), &hash)).await
+}
+
+// Repository setup, identity, and OS integration.
+
+#[tauri::command]
+pub async fn clone_repo(url: String, parent: String) -> GitResult<String> {
+    blocking(move || git::repo::clone(&url, Path::new(&parent)).map(|p| p.to_string_lossy().into_owned())).await
+}
+
+#[tauri::command]
+pub async fn init_repo(path: String) -> GitResult<()> {
+    blocking(move || git::repo::init(Path::new(&path))).await
+}
+
+#[tauri::command]
+pub async fn identity(root: String) -> GitResult<Identity> {
+    blocking(move || Ok(git::repo::identity(Path::new(&root)))).await
+}
+
+#[tauri::command]
+pub async fn set_identity(root: String, name: String, email: String, global: bool) -> GitResult<()> {
+    blocking(move || git::repo::set_identity(Path::new(&root), &name, &email, global)).await
+}
+
+#[tauri::command]
+pub fn reveal(app: AppHandle, path: String) -> GitResult<()> {
+    crate::system::reveal(&app, Path::new(&path))
+}
+
+#[tauri::command]
+pub fn open_terminal(path: String) -> GitResult<()> {
+    crate::system::open_terminal(Path::new(&path))
+}
+
+#[tauri::command]
+pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
+    crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }

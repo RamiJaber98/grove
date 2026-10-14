@@ -1,5 +1,5 @@
 import { isTauri } from "../api/git";
-import { pickAndOpenRepo } from "../runCommand";
+import { pickAndOpenRepo, runCommand } from "../runCommand";
 import { useRepo } from "../store/repo";
 import Logo from "./Logo";
 
@@ -19,9 +19,17 @@ export default function Welcome() {
             Running in a plain browser. Start the desktop app with <code>npm run app:dev</code>.
           </p>
         )}
-        <button className="btn primary" onClick={pickAndOpenRepo} disabled={loading || !isTauri}>
-          Open Repository…
-        </button>
+        <div className="welcome-actions">
+          <button className="btn primary" onClick={pickAndOpenRepo} disabled={loading || !isTauri}>
+            Open Repository…
+          </button>
+          <button className="btn" onClick={() => runCommand("clone_repo")} disabled={loading || !isTauri}>
+            Clone…
+          </button>
+          <button className="btn" onClick={() => runCommand("init_repo")} disabled={loading || !isTauri}>
+            Initialize…
+          </button>
+        </div>
         {recent.length > 0 && (
           <div className="recent">
             <div className="section-label">Recent</div>
