@@ -6,6 +6,7 @@ import { pick } from "../dialogs";
 import { useRepo } from "../store/repo";
 import { loadPref, savePref } from "../store/prefs";
 import { Refresh } from "./Icons";
+import { openInteractiveRebase } from "../rebase";
 
 const DiffEditor = lazy(() => import("./DiffEditor"));
 
@@ -225,6 +226,13 @@ function CommitPane({ entry }: { entry: LogEntry }) {
             }}
           >
             Reset…
+          </button>
+          <button
+            className="btn small"
+            title="Reorder, reword, squash or drop the commits after this one"
+            onClick={() => openInteractiveRebase({ base: entry.hash, label: entry.short })}
+          >
+            Rebase from Here…
           </button>
         </div>
         {error && <div className="empty error">{error}</div>}

@@ -9,6 +9,7 @@ pub mod file_log;
 pub mod files;
 pub mod log;
 pub mod ops;
+pub mod rebase;
 pub mod refs;
 pub mod remote;
 pub mod repo;
@@ -128,6 +129,17 @@ pub fn run_with_stdin(cwd: &Path, args: &[&str], input: &[u8]) -> GitResult<Stri
         .write_all(input)
         .map_err(|e| GitError::new(format!("failed to write to git: {e}")))?;
     let output = child.wait_with_output().map_err(spawn_error)?;
+    finish(args, output)
+}
+
+/// Like `run`, with extra environment variables. Interactive rebase uses it
+/// to replace git's editors for that one invocation.
+pub fn run_env(cwd: &Path, args: &[&str], envs: &[(&str, &str)]) -> GitResult<String> {
+    let output = command(cwd, args)
+        .envs(envs.iter().copied())
+        .stdin(Stdio::null())
+        .output()
+        .map_err(spawn_error)?;
     finish(args, output)
 }
 

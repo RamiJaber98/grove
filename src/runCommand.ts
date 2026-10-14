@@ -7,6 +7,7 @@ import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
 import { openBlame, openFileHistory, useFileView } from "./store/fileView";
+import { openInteractiveRebase } from "./rebase";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -157,6 +158,9 @@ export async function runCommand(id: string) {
       return id === "file_history" ? openFileHistory(path) : openBlame(path);
     }
   }
+
+  // Interactive rebase
+  if (id === "interactive_rebase") return openInteractiveRebase();
 
   s.toast(`Unknown command: ${id}`, "error");
 }

@@ -73,6 +73,9 @@ pub fn run() {
             // Credential prompts, progress & cancel.
             commands::cancel_git,
             commands::askpass_answer,
+            // Interactive rebase
+            commands::rebase_plan,
+            commands::start_interactive_rebase,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

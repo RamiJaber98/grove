@@ -111,3 +111,10 @@ export const MORE_MENU: { title: string; ids: string[] }[] = [
   { title: "Remote", ids: ["add_remote", "remove_remote"] },
   { title: "Reset & History", ids: ["cherry_pick", "revert_commit", "reset_soft", "reset_mixed", "reset_hard"] },
 ];
+
+// Interactive rebase: listed right after "Rebase Current Onto…".
+COMMANDS.interactive_rebase = { label: "Interactive Rebase…" };
+{
+  const ids = MORE_MENU.find((g) => g.title === "Branch")?.ids;
+  ids?.splice(ids.indexOf("rebase_branch") + 1, 0, "interactive_rebase");
+}

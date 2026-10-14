@@ -14,6 +14,7 @@ import Panels from "./components/Panels";
 import AskpassDialog from "./components/AskpassDialog";
 import { FloatingProgress } from "./components/Progress";
 import { installProgressListeners } from "./progress";
+import RebaseEditor from "./components/RebaseEditor";
 
 export default function App() {
   const repo = useRepo((s) => s.repo);
@@ -70,6 +71,7 @@ export default function App() {
     <>
       {repo ? <Workspace /> : <Welcome />}
       <Panels />
+      <RebaseEditor />
       <Dialog />
       <AskpassDialog />
       <FloatingProgress />
