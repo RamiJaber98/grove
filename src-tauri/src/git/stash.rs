@@ -83,7 +83,7 @@ fn files(root: &Path, r#ref: &str) -> GitResult<Vec<FileChange>> {
 
 /// Parses `git diff --name-status -z`: `X\0path\0`, or `R<score>\0old\0new\0`
 /// for renames and copies.
-fn parse_name_status(out: &str) -> Vec<FileChange> {
+pub(super) fn parse_name_status(out: &str) -> Vec<FileChange> {
     let mut fields = out.split('\0').filter(|f| !f.is_empty());
     let mut files = Vec::new();
     while let Some(status) = fields.next() {

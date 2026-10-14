@@ -58,6 +58,29 @@ export interface Commit {
 
 export type ResetMode = "soft" | "mixed" | "hard";
 
+export interface LogEntry {
+  hash: string;
+  short: string;
+  parents: string[];
+  author: string;
+  time: number;
+  /** e.g. "HEAD -> main", "origin/main", "tag: v1.0" */
+  refs: string[];
+  subject: string;
+}
+
+export interface CommitDetail {
+  hash: string;
+  parents: string[];
+  author: string;
+  email: string;
+  time: number;
+  committer: string;
+  commitTime: number;
+  message: string;
+  files: FileChange[];
+}
+
 export interface StashEntry {
   /** e.g. "stash@{0}" */
   ref: string;
@@ -117,8 +140,9 @@ export const git = {
   unstageAll: (root: string) => invoke<void>("unstage_all", { root }),
   discard: (root: string, tracked: string[], untracked: string[]) =>
     invoke<void>("discard", { root, tracked, untracked }),
-  fileVersions: (root: string, group: string, path: string, from?: string, stashRef?: string) =>
-    invoke<FileVersions>("file_versions", { root, group, path, from, stashRef }),
+  /** `rev` is the stash ref or commit hash for the "stash" and "commit" groups. */
+  fileVersions: (root: string, group: string, path: string, from?: string, rev?: string) =>
+    invoke<FileVersions>("file_versions", { root, group, path, from, rev }),
   /** Returns the new commit's short hash. */
   commit: (root: string, message: string, amend: boolean) => invoke<string>("commit", { root, message, amend }),
   lastCommitMessage: (root: string) => invoke<string | null>("last_commit_message", { root }),
@@ -145,7 +169,8 @@ export const git = {
   operation: (root: string, kind: string, action: "abort" | "continue") =>
     invoke<void>("operation", { root, kind, action }),
   tags: (root: string) => invoke<Tag[]>("tags", { root }),
-  createTag: (root: string, name: string, message: string) => invoke<void>("create_tag", { root, name, message }),
+  createTag: (root: string, name: string, message: string, target: string | null = null) =>
+    invoke<void>("create_tag", { root, name, message, target }),
   deleteTag: (root: string, name: string) => invoke<void>("delete_tag", { root, name }),
   remotes: (root: string) => invoke<Remote[]>("remotes", { root }),
   addRemote: (root: string, name: string, url: string) => invoke<void>("add_remote", { root, name, url }),
@@ -154,4 +179,9 @@ export const git = {
   /** Returns how many paths were deleted. */
   clean: (root: string) => invoke<number>("clean", { root }),
   recentCommits: (root: string, limit: number) => invoke<Commit[]>("recent_commits", { root, limit }),
+  log: (root: string, skip: number, limit: number, all: boolean) => invoke<LogEntry[]>("log", { root, skip, limit, all }),
+  commitDetail: (root: string, hash: string) => invoke<CommitDetail>("commit_detail", { root, hash }),
+  cherryPick: (root: string, hash: string) => invoke<void>("cherry_pick", { root, hash }),
+  revert: (root: string, hash: string) => invoke<void>("revert", { root, hash }),
+  checkoutDetached: (root: string, hash: string) => invoke<void>("checkout_detached", { root, hash }),
 };

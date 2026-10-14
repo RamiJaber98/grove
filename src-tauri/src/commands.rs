@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, State};
 
 use crate::git::diff::FileVersions;
+use crate::git::log::{CommitDetail, LogEntry};
 use crate::git::refs::{Branch, Commit, OperationAction, Remote, ResetMode, Tag};
 use crate::git::remote::RemoteOp;
 use crate::git::stash::{StashEntry, StashMode};
@@ -78,11 +79,9 @@ pub async fn file_versions(
     group: String,
     path: String,
     from: Option<String>,
-    stash_ref: Option<String>,
+    rev: Option<String>,
 ) -> GitResult<FileVersions> {
-    blocking(move || {
-        git::diff::versions(Path::new(&root), &group, &path, from.as_deref(), stash_ref.as_deref())
-    })
+    blocking(move || git::diff::versions(Path::new(&root), &group, &path, from.as_deref(), rev.as_deref()))
     .await
 }
 
@@ -174,8 +173,8 @@ pub async fn tags(root: String) -> GitResult<Vec<Tag>> {
 }
 
 #[tauri::command]
-pub async fn create_tag(root: String, name: String, message: String) -> GitResult<()> {
-    blocking(move || git::refs::create_tag(Path::new(&root), &name, &message)).await
+pub async fn create_tag(root: String, name: String, message: String, target: Option<String>) -> GitResult<()> {
+    blocking(move || git::refs::create_tag(Path::new(&root), &name, &message, target.as_deref())).await
 }
 
 #[tauri::command]
@@ -211,4 +210,29 @@ pub async fn clean(root: String) -> GitResult<usize> {
 #[tauri::command]
 pub async fn recent_commits(root: String, limit: usize) -> GitResult<Vec<Commit>> {
     blocking(move || git::refs::recent_commits(Path::new(&root), limit)).await
+}
+
+#[tauri::command]
+pub async fn log(root: String, skip: usize, limit: usize, all: bool) -> GitResult<Vec<LogEntry>> {
+    blocking(move || git::log::log(Path::new(&root), skip, limit, all)).await
+}
+
+#[tauri::command]
+pub async fn commit_detail(root: String, hash: String) -> GitResult<CommitDetail> {
+    blocking(move || git::log::detail(Path::new(&root), &hash)).await
+}
+
+#[tauri::command]
+pub async fn cherry_pick(root: String, hash: String) -> GitResult<()> {
+    blocking(move || git::log::cherry_pick(Path::new(&root), &hash)).await
+}
+
+#[tauri::command]
+pub async fn revert(root: String, hash: String) -> GitResult<()> {
+    blocking(move || git::log::revert(Path::new(&root), &hash)).await
+}
+
+#[tauri::command]
+pub async fn checkout_detached(root: String, hash: String) -> GitResult<()> {
+    blocking(move || git::log::checkout_detached(Path::new(&root), &hash)).await
 }

@@ -3,7 +3,7 @@
  * Repository menus, and the status-bar branch switcher.
  */
 import { ask } from "@tauri-apps/plugin-dialog";
-import { errorMessage, git, type Branch, type Commit, type ResetMode } from "./api/git";
+import { errorMessage, git, type Branch, type Commit, type LogEntry, type ResetMode } from "./api/git";
 import { remote, withBusy } from "./actions";
 import { pick, promptText, type PickItem } from "./dialogs";
 import { useRepo } from "./store/repo";
@@ -349,14 +349,16 @@ const RESET_INFO: Record<ResetMode, { title: string; effect: string }> = {
   },
 };
 
-export async function resetTo(mode: ResetMode) {
+export async function resetTo(mode: ResetMode, preset?: Commit) {
   const r = root();
   if (!r) return;
-  const commits = await git.recentCommits(r, 50).catch((e) => (toast(errorMessage(e), "error"), null));
-  if (!commits) return;
-  if (commits.length === 0) return toast("There are no commits yet.");
   const info = RESET_INFO[mode];
-  const target = await pick<Commit>({
+  let target: Commit | null = preset ?? null;
+  if (!target) {
+    const commits = await git.recentCommits(r, 50).catch((e) => (toast(errorMessage(e), "error"), null));
+    if (!commits) return;
+    if (commits.length === 0) return toast("There are no commits yet.");
+    target = await pick<Commit>({
     title: `${info.title}: move ${useRepo.getState().branch ?? "HEAD"} to…`,
     placeholder: "Pick the commit to reset to",
     items: commits.map((c, i) => ({
@@ -364,8 +366,10 @@ export async function resetTo(mode: ResetMode) {
       detail: `${c.author} · ${ago(c.time)}${i === 0 ? " · current" : ""}`,
       value: c,
     })),
-  });
+    });
+  }
   if (!target) return;
+  const chosen = target;
   const ok = await ask(`Reset to ${target.short} "${target.subject}"?\n\n${info.effect}`, {
     title: info.title,
     kind: "warning",
@@ -374,8 +378,8 @@ export async function resetTo(mode: ResetMode) {
   });
   if (!ok) return;
   await withBusy("Resetting…", async (r2) => {
-    await git.reset(r2, target.hash, mode);
-    toast(`Reset to ${target.short}.`);
+    await git.reset(r2, chosen.hash, mode);
+    toast(`Reset to ${chosen.short}.`);
   });
 }
 
@@ -392,3 +396,122 @@ export async function cleanUntracked() {
     toast(`Deleted ${n} untracked item${n === 1 ? "" : "s"}.`);
   });
 }
+
+// ── History (commit-level actions) ──────────────────────────────────────
+
+/** After a cherry-pick or revert stops on conflicts, explain instead of erroring. */
+async function explainStop(r: string, e: unknown, what: string) {
+  const s = await git.status(r);
+  if (s.operation) toast(`${what} stopped on conflicts. Resolve and stage them, then Continue.`);
+  else throw e;
+}
+
+export async function cherryPickCommit(c: { hash: string; short: string; subject: string }) {
+  const ok = await ask(`Apply "${c.subject}" (${c.short}) on top of ${useRepo.getState().branch ?? "HEAD"}?`, {
+    title: "Cherry-Pick",
+    kind: "info",
+    okLabel: "Cherry-Pick",
+    cancelLabel: "Cancel",
+  });
+  if (!ok) return;
+  await withBusy("Cherry-picking…", async (r) => {
+    try {
+      await git.cherryPick(r, c.hash);
+      toast(`Cherry-picked ${c.short}.`);
+    } catch (e) {
+      await explainStop(r, e, "Cherry-pick");
+    }
+  });
+}
+
+export async function revertCommit(c: { hash: string; short: string; subject: string }) {
+  const ok = await ask(`Create a new commit that undoes "${c.subject}" (${c.short})?`, {
+    title: "Revert Commit",
+    kind: "info",
+    okLabel: "Revert",
+    cancelLabel: "Cancel",
+  });
+  if (!ok) return;
+  await withBusy("Reverting…", async (r) => {
+    try {
+      await git.revert(r, c.hash);
+      toast(`Reverted ${c.short}.`);
+    } catch (e) {
+      await explainStop(r, e, "Revert");
+    }
+  });
+}
+
+export async function checkoutCommit(c: { hash: string; short: string }) {
+  const ok = await ask(
+    `Check out ${c.short} without a branch ("detached HEAD")?\n\nNew commits made there won't belong to any branch unless you create one.`,
+    { title: "Checkout Commit", kind: "warning", okLabel: "Checkout", cancelLabel: "Cancel" },
+  );
+  if (!ok) return;
+  await withBusy("Checking out…", async (r) => {
+    await git.checkoutDetached(r, c.hash);
+    toast(`Checked out ${c.short}.`);
+  });
+}
+
+export async function branchAt(c: { hash: string; short: string }) {
+  const name = await promptBranchName(`New Branch at ${c.short}`);
+  if (!name) return;
+  await withBusy("Creating branch…", async (r) => {
+    await git.createBranch(r, name, c.hash, true);
+    toast(`Created ${name} at ${c.short} and switched to it.`);
+  });
+}
+
+export async function tagAt(c: { hash: string; short: string }) {
+  const name = await promptText({
+    title: `Create Tag at ${c.short}`,
+    placeholder: "Tag name, e.g. v1.2.0",
+    okLabel: "Next",
+    validate: (v) => (/\s/.test(v.trim()) ? "Tag names can't contain spaces." : null),
+  });
+  if (!name) return;
+  const message = await promptText({
+    title: `Create Tag ${name}`,
+    message: "Add a message to make an annotated tag, or leave it empty for a lightweight tag.",
+    placeholder: "Message (optional)",
+    okLabel: "Create Tag",
+    allowEmpty: true,
+  });
+  if (message === null) return;
+  await withBusy("Creating tag…", async (r) => {
+    await git.createTag(r, name, message, c.hash);
+    toast(`Created tag ${name} at ${c.short}.`);
+  });
+}
+
+/** ⋯ › Cherry-Pick…: choose a commit from any branch. */
+export async function pickAndCherryPick() {
+  const r = root();
+  if (!r) return;
+  const entries = await git.log(r, 0, 200, true).catch((e) => (toast(errorMessage(e), "error"), null));
+  if (!entries) return;
+  const choice = await pick<LogEntry>({
+    title: "Cherry-Pick",
+    placeholder: "Pick a commit from any branch",
+    items: entries.map((c) => ({ label: `${c.short}  ${c.subject}`, detail: `${c.author} · ${ago(c.time)}${c.refs.length ? ` · ${c.refs.join(", ")}` : ""}`, value: c })),
+  });
+  if (choice) await cherryPickCommit(choice);
+}
+
+/** ⋯ › Revert Commit…: choose a commit on the current branch. */
+export async function pickAndRevert() {
+  const r = root();
+  if (!r) return;
+  const entries = await git.log(r, 0, 200, false).catch((e) => (toast(errorMessage(e), "error"), null));
+  if (!entries) return;
+  if (entries.length === 0) return toast("There are no commits yet.");
+  const choice = await pick<LogEntry>({
+    title: "Revert Commit",
+    placeholder: "Pick a commit to undo",
+    items: entries.map((c) => ({ label: `${c.short}  ${c.subject}`, detail: `${c.author} · ${ago(c.time)}`, value: c })),
+  });
+  if (choice) await revertCommit(choice);
+}
+
+export { ago };

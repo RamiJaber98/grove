@@ -30,7 +30,7 @@ export const COMMANDS: Record<string, CommandInfo> = {
   theme_system: { label: "System Theme" },
   theme_light: { label: "Light Theme" },
   theme_dark: { label: "Dark Theme" },
-  show_history: { label: "History", phase: 7 },
+  show_history: { label: "History" },
   refresh: { label: "Refresh" },
 
   // Primary actions (panel buttons)
@@ -83,8 +83,8 @@ export const COMMANDS: Record<string, CommandInfo> = {
   remove_remote: { label: "Remove Remote…", danger: true },
 
   // History / advanced
-  cherry_pick: { label: "Cherry-Pick…", phase: 7 },
-  revert_commit: { label: "Revert Commit…", phase: 7 },
+  cherry_pick: { label: "Cherry-Pick…" },
+  revert_commit: { label: "Revert Commit…" },
   reset_soft: { label: "Reset (Soft)…" },
   reset_mixed: { label: "Reset (Mixed)…" },
   reset_hard: { label: "Reset (Hard)…", danger: true },

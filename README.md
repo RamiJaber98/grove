@@ -49,5 +49,5 @@ src-tauri/           Rust backend
 4. ✅ Commit, Push, Pull (plus fetch, sync, amend, undo, force push)
 5. ✅ Stashes
 6. ✅ ⋯ menu commands — fetch, branches, tags, remotes, reset…
-7. History and merge conflicts
+7. ✅ History and merge conflicts
 8. Polish — settings, shortcuts, installers, auto-update

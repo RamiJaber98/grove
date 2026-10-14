@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import { useRepo } from "../store/repo";
 import ChangesPanel from "./ChangesPanel";
 import DiffView from "./DiffView";
+import HistoryView from "./HistoryView";
 import StatusBar from "./StatusBar";
 
 const MIN_PANEL = 260;
@@ -10,6 +11,8 @@ const MIN_DIFF = 320;
 export default function Workspace() {
   const panelWidth = useRepo((s) => s.panelWidth);
   const setPanelWidth = useRepo((s) => s.setPanelWidth);
+  const view = useRepo((s) => s.view);
+  const setView = useRepo((s) => s.setView);
   const mainRef = useRef<HTMLDivElement>(null);
 
   const startResize = useCallback(
@@ -36,7 +39,23 @@ export default function Workspace() {
   return (
     <div className="workspace">
       <div className="main" ref={mainRef}>
-        <DiffView />
+        <div className="main-left">
+          <nav className="tabs" role="tablist">
+            {(["changes", "history"] as const).map((v) => (
+              <button
+                key={v}
+                role="tab"
+                aria-selected={view === v}
+                className={view === v ? "active" : ""}
+                onClick={() => setView(v)}
+                title={v === "history" ? "History (Ctrl+Shift+H)" : undefined}
+              >
+                {v === "changes" ? "Changes" : "History"}
+              </button>
+            ))}
+          </nav>
+          {view === "changes" ? <DiffView /> : <HistoryView />}
+        </div>
         <div className="splitter" onPointerDown={startResize} role="separator" aria-orientation="vertical" />
         <ChangesPanel width={panelWidth} />
       </div>

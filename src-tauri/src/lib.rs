@@ -46,6 +46,11 @@ pub fn run() {
             commands::reset,
             commands::clean,
             commands::recent_commits,
+            commands::log,
+            commands::commit_detail,
+            commands::cherry_pick,
+            commands::revert,
+            commands::checkout_detached,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

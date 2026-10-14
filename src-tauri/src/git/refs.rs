@@ -205,15 +205,16 @@ pub fn tags(root: &Path) -> GitResult<Vec<Tag>> {
 }
 
 /// An annotated tag when `message` is non-empty, else a lightweight one.
-pub fn create_tag(root: &Path, name: &str, message: &str) -> GitResult<()> {
+/// Tags HEAD unless `target` names another commit.
+pub fn create_tag(root: &Path, name: &str, message: &str, target: Option<&str>) -> GitResult<()> {
     check_tag_name(root, name)?;
     let name = name.trim();
     let message = message.trim();
-    if message.is_empty() {
-        run(root, &["tag", name]).map(drop)
-    } else {
-        run(root, &["tag", "-a", name, "-m", message]).map(drop)
+    let mut args = if message.is_empty() { vec!["tag", name] } else { vec!["tag", "-a", name, "-m", message] };
+    if let Some(target) = target {
+        args.push(plain_arg("commit", target)?);
     }
+    run(root, &args).map(drop)
 }
 
 pub fn delete_tag(root: &Path, name: &str) -> GitResult<()> {
@@ -354,9 +355,9 @@ mod tests {
         commit_file(root, "a.txt", "1", "one");
         commit_file(root, "a.txt", "2", "two");
 
-        create_tag(root, "v1.0", "First release").unwrap();
-        create_tag(root, "light", "").unwrap();
-        assert!(create_tag(root, "bad..tag", "").is_err());
+        create_tag(root, "v1.0", "First release", None).unwrap();
+        create_tag(root, "light", "", Some("HEAD~1")).unwrap();
+        assert!(create_tag(root, "bad..tag", "", None).is_err());
         let t = tags(root).unwrap();
         assert!(t.iter().any(|t| t.name == "v1.0" && t.subject == "First release"));
         delete_tag(root, "light").unwrap();

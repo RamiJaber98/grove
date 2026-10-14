@@ -77,6 +77,12 @@ export async function runCommand(id: string) {
       return refs.resetTo("hard");
     case "clean_untracked":
       return refs.cleanUntracked();
+    case "show_history":
+      return s.setView(s.view === "history" ? "changes" : "history");
+    case "cherry_pick":
+      return refs.pickAndCherryPick();
+    case "revert_commit":
+      return refs.pickAndRevert();
     case "open_repo":
       return pickAndOpenRepo();
     case "close_repo":

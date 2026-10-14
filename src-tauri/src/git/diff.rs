@@ -93,13 +93,14 @@ fn read(root: &Path, source: Source) -> GitResult<Side> {
     }
 }
 
-/// `group` is the panel group the file was selected from.
+/// `group` is where the file was selected: a panel group, or "commit" for
+/// the History view. `rev` names the stash or commit for those two.
 pub fn versions(
     root: &Path,
     group: &str,
     path: &str,
     from: Option<&str>,
-    stash_ref: Option<&str>,
+    rev: Option<&str>,
 ) -> GitResult<FileVersions> {
     let (original, modified) = match group {
         // HEAD → index. For renames the HEAD side is the old path.
@@ -112,8 +113,17 @@ pub fn versions(
         // ours → disk (with conflict markers).
         "conflicts" => (read(root, Source::Index(2, path))?, read(root, Source::Worktree(path))?),
         // stash parent → stash. Untracked files live in the stash's third parent.
+        // first parent → commit. A root commit has no parent side.
+        "commit" => {
+            let commit = rev.ok_or_else(|| GitError::new("missing commit"))?;
+            if !commit.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err(GitError::new(format!("{commit} is not a commit hash")));
+            }
+            let parent = format!("{commit}^1");
+            (read(root, Source::Rev(&parent, from.unwrap_or(path)))?, read(root, Source::Rev(commit, path))?)
+        }
         "stash" => {
-            let stash = stash_ref.ok_or_else(|| GitError::new("missing stash reference"))?;
+            let stash = rev.ok_or_else(|| GitError::new("missing stash reference"))?;
             let parent = format!("{stash}^1");
             let mut modified = read(root, Source::Rev(stash, path))?;
             if !modified.exists {

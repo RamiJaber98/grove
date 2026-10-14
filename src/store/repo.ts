@@ -6,6 +6,7 @@ import { loadPref, savePref } from "./prefs";
 export type DiffMode = "side-by-side" | "inline";
 export type Theme = "system" | "light" | "dark";
 export type Group = "conflicts" | "staged" | "changes" | "stash";
+export type MainView = "changes" | "history";
 
 export interface Selection {
   group: Group;
@@ -45,6 +46,8 @@ interface State {
   statusVersion: number;
   /** Label of the long-running operation in progress ("Pushing…"), if any. */
   busy: string | null;
+  /** What the main (left) area shows. */
+  view: MainView;
 
   diffMode: DiffMode;
   ignoreWhitespace: boolean;
@@ -64,6 +67,7 @@ interface State {
   select: (s: Selection | null) => void;
   setCommitMessage: (m: string) => void;
   setBusy: (label: string | null) => void;
+  setView: (view: MainView) => void;
   setDiffMode: (m: DiffMode) => void;
   toggleWhitespace: () => void;
   toggleWordWrap: () => void;
@@ -151,6 +155,7 @@ export const useRepo = create<State>((set, get) => {
     commitMessage: "",
     statusVersion: 0,
     busy: null,
+    view: "changes",
 
     diffMode: loadPref<DiffMode>("diffMode", "side-by-side"),
     ignoreWhitespace: loadPref("ignoreWhitespace", false),
@@ -230,9 +235,10 @@ export const useRepo = create<State>((set, get) => {
       await mutate((root) => git.discard(root, tracked, untracked));
     },
 
-    select: (selection) => set({ selection }),
+    select: (selection) => set(selection ? { selection, view: "changes" } : { selection }),
     setCommitMessage: (commitMessage) => set({ commitMessage }),
     setBusy: (busy) => set({ busy }),
+    setView: (view) => set({ view }),
 
     setDiffMode(diffMode) {
       savePref("diffMode", diffMode);
