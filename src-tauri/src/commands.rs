@@ -274,3 +274,28 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// History search and comparing refs.
+
+#[tauri::command]
+pub async fn search_log(root: String, query: git::search::LogQuery) -> GitResult<Vec<LogEntry>> {
+    blocking(move || git::search::search(Path::new(&root), &query)).await
+}
+
+/// `b` of `None` compares with the working tree.
+#[tauri::command]
+pub async fn compare(root: String, a: String, b: Option<String>, three_dot: bool) -> GitResult<git::compare::Comparison> {
+    blocking(move || git::compare::compare(Path::new(&root), &a, b.as_deref(), three_dot)).await
+}
+
+#[tauri::command]
+pub async fn ref_versions(
+    root: String,
+    base: String,
+    head: Option<String>,
+    path: String,
+    from: Option<String>,
+) -> GitResult<FileVersions> {
+    blocking(move || git::compare::ref_versions(Path::new(&root), &base, head.as_deref(), &path, from.as_deref()))
+        .await
+}

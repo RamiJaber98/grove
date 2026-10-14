@@ -33,7 +33,7 @@ pub struct FileVersions {
 }
 
 /// Where one side of a diff comes from.
-enum Source<'a> {
+pub(super) enum Source<'a> {
     /// `<rev>:<path>` from the object database.
     Rev(&'a str, &'a str),
     /// The staged copy (`:<n>:<path>`); stage 2 is "ours" during a merge.
@@ -64,7 +64,7 @@ impl Side {
     }
 }
 
-fn read(root: &Path, source: Source) -> GitResult<Side> {
+pub(super) fn read(root: &Path, source: Source) -> GitResult<Side> {
     let spec = match source {
         Source::Worktree(path) => {
             let full = repo_path(root, path)?;

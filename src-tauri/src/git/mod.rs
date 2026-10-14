@@ -3,12 +3,14 @@
 //! terminal exactly (credentials, hooks, config, SSH keys).
 
 pub mod commit;
+pub mod compare;
 pub mod diff;
 pub mod log;
 pub mod ops;
 pub mod refs;
 pub mod remote;
 pub mod repo;
+pub mod search;
 pub mod stash;
 pub mod status;
 
