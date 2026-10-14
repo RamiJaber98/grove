@@ -105,7 +105,7 @@ const fileName = (path: string) => path.split("/").pop() ?? path;
  * Keeps the selected file selected across a status refresh. If it moved
  * between groups (e.g. it was just staged or unstaged), follow it there.
  */
-function followSelection(sel: Selection | null, status: Status, stashes: StashEntry[]): Selection | null {
+export function followSelection(sel: Selection | null, status: Status, stashes: StashEntry[]): Selection | null {
   if (!sel) return null;
   if (sel.group === "stash") {
     // Stash refs shift when one is dropped; clear rather than show the wrong one.
