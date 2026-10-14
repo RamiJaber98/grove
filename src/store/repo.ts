@@ -6,8 +6,11 @@ import { loadPref, savePref } from "./prefs";
 export type DiffMode = "side-by-side" | "inline";
 export type Theme = "system" | "light" | "dark";
 export type Group = "conflicts" | "staged" | "changes" | "stash";
-/** "file" is the File History / Blame tab (src/store/fileView.ts). */
-export type MainView = "changes" | "history" | "file";
+/**
+ * "file" is the File History / Blame tab (src/store/fileView.ts);
+ * "compare" is the Compare tab (src/store/compare.ts).
+ */
+export type MainView = "changes" | "history" | "file" | "compare";
 
 export interface Selection {
   group: Group;

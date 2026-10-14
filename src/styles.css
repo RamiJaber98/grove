@@ -519,3 +519,34 @@ button.status-item:focus-visible { outline: 2px solid var(--status-text); outlin
 .rb-result { display: flex; align-items: center; gap: 8px; height: 22px; font-size: 12px; white-space: nowrap; }
 .rb-warning { margin-top: 6px; color: var(--warn); font-size: 12px; }
 .rb-autostash { margin-top: 10px; color: var(--text); }
+
+/* History search and compare */
+.history-search {
+  flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-bottom: 1px solid var(--border); background: var(--bg-panel);
+}
+.search-input, .search-select, .search-date {
+  height: 26px; padding: 0 8px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font: inherit; font-size: 12px; user-select: text;
+}
+.search-input { flex: 1; min-width: 120px; }
+.search-date { width: 128px; color-scheme: inherit; }
+.search-input:focus, .search-select:focus, .search-date:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.search-scope { max-width: 200px; margin-left: auto; }
+.search-note { flex: none; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.commit-row.picked { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.commit-row.picked.selected { background: var(--bg-active); box-shadow: inset 3px 0 0 var(--accent); }
+.tabs .compare-tab { display: inline-flex; align-items: center; gap: 6px; }
+.tab-close { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 3px; font-size: 10px; color: var(--text-muted); }
+.tab-close:hover { background: var(--bg-hover); color: var(--text); }
+.diff-notice.error { color: var(--danger); user-select: text; }
+.compare-side .compare-tabs { margin: 8px 12px; align-self: flex-start; }
+.numstat { flex: none; font: 11px var(--mono); }
+.numstat .added { color: var(--kind-A); }
+.numstat .removed { color: var(--kind-D); }
+.compare-commits { padding: 6px 0 10px; }
+.compare-commits .section-label { padding: 0 12px 4px; }
+.compare-commit { height: 24px; display: flex; align-items: center; gap: 8px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+.compare-commit:hover { background: var(--bg-hover); }
+.compare-commit .commit-hash { flex: none; width: auto; }
+.compare-commit .commit-date { flex: none; }

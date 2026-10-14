@@ -122,6 +122,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(app, "interactive_rebase", "Interactive Rebase…", None)?)
         .separator()
         .item(&item(app, "delete_branch", "Delete Branch…", None)?)
+        // Compare refs
+        .separator()
+        .item(&item(app, "compare_refs", "Compare…", None)?)
         .build()?;
     menu.append(&branch)?;
 

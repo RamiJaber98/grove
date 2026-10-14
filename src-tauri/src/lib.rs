@@ -80,6 +80,10 @@ pub fn run() {
             commands::conflict_file,
             commands::save_conflict,
             commands::resolve_conflict,
+            // History search and compare
+            commands::search_log,
+            commands::compare,
+            commands::ref_versions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

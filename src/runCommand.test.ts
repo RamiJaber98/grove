@@ -9,7 +9,8 @@ const store = vi.hoisted(() => ({
   view: "changes",
 }));
 
-vi.mock("./store/repo", () => ({ useRepo: { getState: () => store } }));
+// Some modules runCommand imports subscribe to the store at load time.
+vi.mock("./store/repo", () => ({ useRepo: { getState: () => store, subscribe: () => () => {} } }));
 vi.mock("./actions", () => ({
   commit: vi.fn(),
   amend: vi.fn(),

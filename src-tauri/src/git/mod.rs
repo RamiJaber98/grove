@@ -5,6 +5,7 @@
 pub mod blame;
 pub mod commit;
 pub mod conflict;
+pub mod compare;
 pub mod diff;
 pub mod file_log;
 pub mod files;
@@ -14,6 +15,7 @@ pub mod rebase;
 pub mod refs;
 pub mod remote;
 pub mod repo;
+pub mod search;
 pub mod stash;
 pub mod status;
 // Credential prompts, progress & cancel: streaming runner for network ops.
