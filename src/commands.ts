@@ -94,6 +94,14 @@ export const COMMANDS: Record<string, CommandInfo> = {
   // Help
   shortcuts: { label: "Keyboard Shortcuts" },
   about: { label: "About Grove" },
+
+  // Partial staging (hunks and lines), acting on the open diff
+  stage_hunk: { label: "Stage Hunk" },
+  stage_lines: { label: "Stage Selected Lines" },
+  unstage_hunk: { label: "Unstage Hunk" },
+  unstage_lines: { label: "Unstage Selected Lines" },
+  discard_hunk: { label: "Discard Hunk", danger: true },
+  discard_lines: { label: "Discard Selected Lines", danger: true },
 };
 
 /** Layout of the ⋯ menu. Push, Pull and Commit are deliberately absent. */

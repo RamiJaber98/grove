@@ -274,3 +274,16 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// Partial staging (hunks and lines).
+
+#[tauri::command]
+pub async fn apply_lines(
+    root: String,
+    path: String,
+    from: Option<String>,
+    op: git::patch::PatchOp,
+    lines: git::patch::LineSelection,
+) -> GitResult<()> {
+    blocking(move || git::patch::apply_lines(Path::new(&root), &path, from.as_deref(), op, &lines)).await
+}

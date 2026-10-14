@@ -201,3 +201,17 @@ export const git = {
   openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
   openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
 };
+
+// Partial staging (hunks and lines).
+
+export type PatchOp = "stage" | "unstage" | "discard";
+
+/** Inclusive 1-based line ranges on the original (`old`) and modified (`new`) side of a diff. */
+export interface LineRanges {
+  old: [number, number][];
+  new: [number, number][];
+}
+
+/** Stages, unstages or discards just `lines` of `path`'s diff. */
+export const applyLines = (root: string, path: string, from: string | undefined, op: PatchOp, lines: LineRanges) =>
+  invoke<void>("apply_lines", { root, path, from, op, lines });

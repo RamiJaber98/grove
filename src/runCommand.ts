@@ -6,6 +6,8 @@ import { openPanel } from "./dialogs";
 import type { RemoteOp } from "./api/git";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
+import type { PatchOp } from "./api/git";
+import { partialStage, type Scope } from "./partialStage";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -148,6 +150,16 @@ export async function runCommand(id: string) {
       return repoActions.openTerminal();
     case "edit_gitignore":
       return repoActions.editGitignore();
+    // Partial staging (hunks and lines)
+    case "stage_hunk":
+    case "stage_lines":
+    case "unstage_hunk":
+    case "unstage_lines":
+    case "discard_hunk":
+    case "discard_lines": {
+      const [op, scope] = id.split("_") as [PatchOp, Scope];
+      return partialStage(op, scope);
+    }
   }
 
   s.toast(`Unknown command: ${id}`, "error");

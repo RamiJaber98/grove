@@ -99,6 +99,7 @@ export default function DiffView() {
             original={versions!.original.text}
             modified={versions!.modified.text}
             onStats={setStats}
+            partialStaging
           />
         </Suspense>
       </>

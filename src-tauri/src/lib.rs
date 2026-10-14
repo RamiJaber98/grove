@@ -59,6 +59,8 @@ pub fn run() {
             commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
+            // Partial staging (hunks and lines)
+            commands::apply_lines,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

@@ -173,6 +173,10 @@ const SHORTCUTS: [string, string][] = [
   ["F7 / Shift+F7", "Next / previous change"],
   ["Alt+Z", "Toggle word wrap"],
   [`${mod}+/`, "Keyboard shortcuts"],
+  // Partial staging (hunks and lines); work while the diff has focus.
+  [`${mod}+Alt+S / ${mod}+Alt+Shift+S`, "Stage selected lines / hunk"],
+  [`${mod}+Alt+U / ${mod}+Alt+Shift+U`, "Unstage selected lines / hunk"],
+  [`${mod}+Alt+D / ${mod}+Alt+Shift+D`, "Discard selected lines / hunk"],
 ];
 
 function Shortcuts() {

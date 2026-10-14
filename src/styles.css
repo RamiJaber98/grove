@@ -402,3 +402,29 @@ kbd {
 .about { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0 4px; }
 .about-name { font-size: 16px; font-weight: 600; }
 .about p { margin: 6px 0 0; }
+
+/* Partial staging (hunks and lines): action bar on the change under the mouse.
+   The host spans the editor's top edge; the bar is placed inside it per line. */
+.hunk-bar-host { position: absolute; top: 0; left: 0; right: 0; height: 0; }
+.hunk-bar {
+  position: absolute;
+  right: 22px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font);
+}
+.hunk-bar button {
+  font: 11px/1 var(--font);
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+.hunk-bar button:hover { background: var(--bg-hover); }
+.hunk-bar button.danger:hover { color: var(--danger); }
+.hunk-bar.busy button { opacity: .5; pointer-events: none; }
