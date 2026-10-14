@@ -4,6 +4,7 @@ import { runCommand } from "../runCommand";
 import { useRepo, type DiffMode, type Group } from "../store/repo";
 import type { DiffStats } from "./DiffEditor";
 import { ArrowDown, ArrowUp } from "./Icons";
+import ConflictView from "./ConflictView";
 
 // Monaco is several MB; load it the first time a diff is shown.
 const DiffEditor = lazy(() => import("./DiffEditor"));
@@ -42,7 +43,7 @@ function unviewable(v: FileVersions): string | null {
   return null;
 }
 
-export default function DiffView() {
+function FileDiffView() {
   const repo = useRepo((s) => s.repo)!;
   const selection = useRepo((s) => s.selection);
   const statusVersion = useRepo((s) => s.statusVersion);
@@ -167,6 +168,12 @@ export default function DiffView() {
       <div className="diff-body">{body}</div>
     </section>
   );
+}
+
+// Merge conflict editor: conflicted files open in the resolver instead of a diff.
+export default function DiffView() {
+  const selection = useRepo((s) => s.selection);
+  return selection?.group === "conflicts" ? <ConflictView path={selection.path} /> : <FileDiffView />;
 }
 
 function Empty({ children, error }: { children: React.ReactNode; error?: boolean }) {

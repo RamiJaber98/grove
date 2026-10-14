@@ -21,6 +21,7 @@ import { useRepo, type Group } from "../store/repo";
 import ContextMenu, { openContextMenu, type MenuItem } from "./ContextMenu";
 import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
 import MoreMenu from "./MoreMenu";
+import { markResolved } from "../conflictActions";
 
 interface Action {
   title: string;
@@ -125,7 +126,7 @@ export default function ChangesPanel({ width }: { width: number }) {
             title="Merge Changes"
             files={conflicts}
             fileActions={(f) => [
-              { title: "Mark as Resolved (Stage)", icon: <Plus />, run: () => stage(targetsFor("conflicts", f)) },
+              { title: "Mark as Resolved (Stage)", icon: <Plus />, run: () => markResolved(targetsFor("conflicts", f)) },
             ]}
           />
         )}

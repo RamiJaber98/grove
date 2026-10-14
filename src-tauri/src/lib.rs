@@ -76,6 +76,10 @@ pub fn run() {
             // Interactive rebase
             commands::rebase_plan,
             commands::start_interactive_rebase,
+            // Merge conflict editor
+            commands::conflict_file,
+            commands::save_conflict,
+            commands::resolve_conflict,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

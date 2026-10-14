@@ -9,6 +9,7 @@ import * as actions from "./actions";
 import { files as api, type Side } from "./api/files";
 import { errorMessage, git, type FileChange, type StashEntry } from "./api/git";
 import type { MenuItem } from "./components/ContextMenu";
+import { markResolved } from "./conflictActions";
 import { promptText } from "./dialogs";
 import { useRepo, type Group } from "./store/repo";
 
@@ -130,7 +131,8 @@ export async function branchFromStash(stash: StashEntry) {
 /** Stage / unstage / mark resolved: what Space does in each group. */
 export function primaryAction(group: Group, files: FileChange[]) {
   const s = state();
-  if (group === "changes" || group === "conflicts") return s.stage(files);
+  if (group === "conflicts") return markResolved(files);
+  if (group === "changes") return s.stage(files);
   if (group === "staged") return s.unstage(files);
   return Promise.resolve();
 }
@@ -201,7 +203,7 @@ export function fileMenu(group: Group, files: FileChange[]): MenuItem[] {
       ];
     case "conflicts":
       return [
-        { label: `Mark as Resolved (Stage)${n}`, run: () => s.stage(files) },
+        { label: `Mark as Resolved (Stage)${n}`, run: () => markResolved(files) },
         { label: `Accept Ours${n}`, run: () => takeSide(files, "ours") },
         { label: `Accept Theirs${n}`, run: () => takeSide(files, "theirs") },
         "separator",
