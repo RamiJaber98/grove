@@ -105,6 +105,14 @@ code { font-family: var(--mono); font-size: 12px; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn.small { height: 26px; padding: 0 8px; font-size: 12px; }
+.btn .count {
+  min-width: 16px; height: 16px; padding: 0 4px; margin-left: 1px; border-radius: 8px;
+  display: inline-grid; place-items: center; font-size: 10px; font-weight: 600;
+  background: var(--accent); color: var(--accent-text);
+}
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
 .icon-btn {
   display: inline-grid; place-items: center; width: 28px; height: 26px;
   border: 0; border-radius: var(--radius); background: transparent; cursor: pointer; color: var(--text-muted);
@@ -270,6 +278,7 @@ button.status-item { cursor: pointer; }
 button.status-item:hover { background: rgba(255, 255, 255, .14); }
 .status-item.path { opacity: .85; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 24px; }
 .status-spacer { flex: 1; }
+.status-busy { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; white-space: nowrap; }
 
 /* Toasts */
 .toasts { position: fixed; right: 16px; bottom: 36px; z-index: 50; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }

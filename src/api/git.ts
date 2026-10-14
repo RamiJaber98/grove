@@ -59,6 +59,16 @@ export function errorMessage(e: unknown): string {
   return String(e);
 }
 
+export type RemoteOp =
+  | "fetch"
+  | "fetch_prune"
+  | "fetch_all"
+  | "pull"
+  | "pull_rebase"
+  | "push"
+  | "push_force"
+  | "sync";
+
 export const git = {
   launchPath: () => invoke<string | null>("launch_path"),
   openRepo: (path: string) => invoke<RepoInfo>("open_repo", { path }),
@@ -71,4 +81,11 @@ export const git = {
     invoke<void>("discard", { root, tracked, untracked }),
   fileVersions: (root: string, group: string, path: string, from?: string, stashRef?: string) =>
     invoke<FileVersions>("file_versions", { root, group, path, from, stashRef }),
+  /** Returns the new commit's short hash. */
+  commit: (root: string, message: string, amend: boolean) => invoke<string>("commit", { root, message, amend }),
+  lastCommitMessage: (root: string) => invoke<string | null>("last_commit_message", { root }),
+  /** Returns the undone commit's message. */
+  undoLastCommit: (root: string) => invoke<string>("undo_last_commit", { root }),
+  /** Returns a one-line summary of what happened. */
+  remoteOp: (root: string, op: RemoteOp) => invoke<string>("remote_op", { root, op }),
 };

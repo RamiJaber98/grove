@@ -48,3 +48,6 @@ export const Minus = ({ size = 14 }: P) => (
 export const Discard = ({ size = 14 }: P) => (
   <svg {...base(size)}><path d="M4 6h6.5a3 3 0 0 1 0 6H7M6.5 3.5 4 6l2.5 2.5" /></svg>
 );
+export const Spinner = ({ size = 14 }: P) => (
+  <svg {...base(size)} className="spin"><path d="M8 2a6 6 0 1 0 6 6" /></svg>
+);

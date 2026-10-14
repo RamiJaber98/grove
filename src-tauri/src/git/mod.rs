@@ -2,8 +2,10 @@
 //! Grove goes through `run`/`run_with_stdin`, so behaviour matches the
 //! terminal exactly (credentials, hooks, config, SSH keys).
 
+pub mod commit;
 pub mod diff;
 pub mod ops;
+pub mod remote;
 pub mod status;
 
 use std::io::Write;
@@ -63,13 +65,22 @@ fn finish_bytes(args: &[&str], output: std::process::Output) -> GitResult<Vec<u8
     if output.status.success() {
         Ok(output.stdout)
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        Err(GitError::new(if stderr.is_empty() {
-            format!("git {} failed", args.join(" "))
-        } else {
-            stderr
-        }))
+        // Some failures only explain themselves on stdout ("nothing to
+        // commit", merge CONFLICT lines), so fall back to it.
+        let message = [&output.stderr, &output.stdout]
+            .into_iter()
+            .map(|b| clean_message(&String::from_utf8_lossy(b)))
+            .find(|m| !m.is_empty())
+            .unwrap_or_else(|| format!("git {} failed", args.join(" ")));
+        Err(GitError::new(message))
     }
+}
+
+/// Drops git's `hint:` advice lines, which are written for terminal users.
+fn clean_message(text: &str) -> String {
+    let lines: Vec<&str> = text.lines().filter(|l| !l.starts_with("hint:")).collect();
+    lines.join("
+").trim().to_string()
 }
 
 /// Runs `git <args>` in `cwd` and returns stdout, or stderr as the error.

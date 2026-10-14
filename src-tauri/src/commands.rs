@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, State};
 
 use crate::git::diff::FileVersions;
+use crate::git::remote::RemoteOp;
 use crate::git::status::Status;
 use crate::git::{self, ops, GitError, GitResult, RepoInfo};
 use crate::watcher::RepoWatcher;
@@ -81,4 +82,24 @@ pub async fn file_versions(
         git::diff::versions(Path::new(&root), &group, &path, from.as_deref(), stash_ref.as_deref())
     })
     .await
+}
+
+#[tauri::command]
+pub async fn commit(root: String, message: String, amend: bool) -> GitResult<String> {
+    blocking(move || git::commit::commit(Path::new(&root), &message, amend)).await
+}
+
+#[tauri::command]
+pub async fn last_commit_message(root: String) -> GitResult<Option<String>> {
+    blocking(move || git::commit::last_message(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn undo_last_commit(root: String) -> GitResult<String> {
+    blocking(move || git::commit::undo_last(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn remote_op(root: String, op: RemoteOp) -> GitResult<String> {
+    blocking(move || git::remote::run_op(Path::new(&root), op)).await
 }

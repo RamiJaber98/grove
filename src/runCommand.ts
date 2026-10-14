@@ -1,4 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
+import * as actions from "./actions";
+import type { RemoteOp } from "./api/git";
 import { COMMANDS } from "./commands";
 import { getActiveDiffEditor } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
@@ -8,10 +10,28 @@ export async function pickAndOpenRepo() {
   if (typeof dir === "string") await useRepo.getState().openRepo(dir);
 }
 
+const REMOTE_OPS = new Set<string>([
+  "fetch",
+  "fetch_prune",
+  "fetch_all",
+  "pull",
+  "pull_rebase",
+  "push",
+  "push_force",
+  "sync",
+]);
+
 /** Single entry point for native menu clicks, the ⋯ menu and panel buttons. */
 export async function runCommand(id: string) {
   const s = useRepo.getState();
+  if (REMOTE_OPS.has(id)) return actions.remote(id as RemoteOp);
   switch (id) {
+    case "commit":
+      return actions.commit();
+    case "commit_amend":
+      return actions.amend();
+    case "undo_commit":
+      return actions.undoLastCommit();
     case "open_repo":
       return pickAndOpenRepo();
     case "close_repo":

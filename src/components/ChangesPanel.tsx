@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import type { FileChange } from "../api/git";
 import { runCommand } from "../runCommand";
 import { useRepo, type Group } from "../store/repo";
-import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus } from "./Icons";
+import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner } from "./Icons";
 import MoreMenu from "./MoreMenu";
 
 interface Action {
@@ -18,27 +18,47 @@ export default function ChangesPanel({ width }: { width: number }) {
   const stashes = useRepo((s) => s.stashes);
   const message = useRepo((s) => s.commitMessage);
   const setMessage = useRepo((s) => s.setCommitMessage);
+  const busy = useRepo((s) => s.busy);
+  const ahead = useRepo((s) => s.ahead);
+  const behind = useRepo((s) => s.behind);
   const { stage, unstage, unstageAll, discard } = useRepo.getState();
 
-  const canCommit = staged.length > 0 && conflicts.length === 0 && message.trim().length > 0;
+  const hasMessage = message.trim().length > 0;
+  const canCommit = !busy && hasMessage && conflicts.length === 0 && staged.length + changes.length > 0;
+  const commitTitle = conflicts.length
+    ? "Resolve merge conflicts before committing"
+    : staged.length + changes.length === 0
+      ? "Nothing to commit"
+      : !hasMessage
+        ? "Enter a commit message"
+        : staged.length
+          ? "Commit staged changes (Ctrl+Enter)"
+          : "Stage all changes and commit (Ctrl+Enter)";
 
   return (
     <aside className="panel" style={{ width }}>
       <div className="panel-toolbar">
         <span className="panel-title">Source Control</span>
+        <button className="btn primary small" onClick={() => runCommand("commit")} disabled={!canCommit} title={commitTitle}>
+          {busy === "Committing…" ? <Spinner /> : <Check size={14} />} Commit
+        </button>
         <button
-          className="btn primary small"
-          onClick={() => runCommand("commit")}
-          disabled={!canCommit}
-          title={canCommit ? "Commit staged changes (Ctrl+Enter)" : "Stage changes and enter a message to commit"}
+          className="btn small"
+          onClick={() => runCommand("push")}
+          disabled={!!busy}
+          title={ahead ? `Push ${ahead} commit${ahead === 1 ? "" : "s"}` : "Push"}
         >
-          <Check size={14} /> Commit
+          {busy?.includes("ushing") ? <Spinner /> : <ArrowUp size={14} />} Push
+          {ahead > 0 && <span className="count">{ahead}</span>}
         </button>
-        <button className="btn small" onClick={() => runCommand("push")} title="Push">
-          <ArrowUp size={14} /> Push
-        </button>
-        <button className="btn small" onClick={() => runCommand("pull")} title="Pull">
-          <ArrowDown size={14} /> Pull
+        <button
+          className="btn small"
+          onClick={() => runCommand("pull")}
+          disabled={!!busy}
+          title={behind ? `Pull ${behind} commit${behind === 1 ? "" : "s"}` : "Pull"}
+        >
+          {busy === "Pulling…" ? <Spinner /> : <ArrowDown size={14} />} Pull
+          {behind > 0 && <span className="count">{behind}</span>}
         </button>
         <MoreMenu />
       </div>
@@ -48,6 +68,7 @@ export default function ChangesPanel({ width }: { width: number }) {
           placeholder="Commit message"
           value={message}
           rows={3}
+          spellCheck
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && canCommit) runCommand("commit");

@@ -42,6 +42,8 @@ interface State {
   commitMessage: string;
   /** Bumped on every status load so open diffs know to re-read the file. */
   statusVersion: number;
+  /** Label of the long-running operation in progress ("Pushing…"), if any. */
+  busy: string | null;
 
   diffMode: DiffMode;
   ignoreWhitespace: boolean;
@@ -60,6 +62,7 @@ interface State {
   discard: (files: FileChange[]) => Promise<void>;
   select: (s: Selection | null) => void;
   setCommitMessage: (m: string) => void;
+  setBusy: (label: string | null) => void;
   setDiffMode: (m: DiffMode) => void;
   toggleWhitespace: () => void;
   toggleWordWrap: () => void;
@@ -139,6 +142,7 @@ export const useRepo = create<State>((set, get) => {
     selection: null,
     commitMessage: "",
     statusVersion: 0,
+    busy: null,
 
     diffMode: loadPref<DiffMode>("diffMode", "side-by-side"),
     ignoreWhitespace: loadPref("ignoreWhitespace", false),
@@ -220,6 +224,7 @@ export const useRepo = create<State>((set, get) => {
 
     select: (selection) => set({ selection }),
     setCommitMessage: (commitMessage) => set({ commitMessage }),
+    setBusy: (busy) => set({ busy }),
 
     setDiffMode(diffMode) {
       savePref("diffMode", diffMode);

@@ -34,21 +34,21 @@ export const COMMANDS: Record<string, CommandInfo> = {
   refresh: { label: "Refresh" },
 
   // Primary actions (panel buttons)
-  commit: { label: "Commit", phase: 4 },
-  push: { label: "Push", phase: 4 },
-  pull: { label: "Pull", phase: 4 },
+  commit: { label: "Commit" },
+  push: { label: "Push" },
+  pull: { label: "Pull" },
 
   // Sync
-  fetch: { label: "Fetch", phase: 6 },
-  fetch_prune: { label: "Fetch (Prune)", phase: 6 },
-  fetch_all: { label: "Fetch From All Remotes", phase: 6 },
-  sync: { label: "Sync (Pull then Push)", phase: 6 },
-  pull_rebase: { label: "Pull (Rebase)", phase: 6 },
-  push_force: { label: "Push (Force With Lease)", phase: 6, danger: true },
+  fetch: { label: "Fetch" },
+  fetch_prune: { label: "Fetch (Prune)" },
+  fetch_all: { label: "Fetch From All Remotes" },
+  sync: { label: "Sync (Pull then Push)" },
+  pull_rebase: { label: "Pull (Rebase)" },
+  push_force: { label: "Push (Force With Lease)", danger: true },
 
   // Commit
-  commit_amend: { label: "Amend Last Commit", phase: 4 },
-  undo_commit: { label: "Undo Last Commit", phase: 6 },
+  commit_amend: { label: "Amend Last Commit" },
+  undo_commit: { label: "Undo Last Commit" },
 
   // Changes
   stage_all: { label: "Stage All Changes" },
