@@ -1,0 +1,66 @@
+# Builds and tests Grove on every push to main and every pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # The backend tests make real commits in temporary repositories.
+      - name: Configure git identity
+        run: |
+          git config --global user.name "Grove CI"
+          git config --global user.email "ci@example.invalid"
+      - run: npm ci
+
+      # Type-checks and builds the frontend into dist/, which the Rust crate
+      # embeds at compile time, so this must run before any cargo command.
+      - run: npm run build
+
+      - run: npm test
+
+      # Not yet enforced with -D warnings: run to surface lints without failing the build.
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets
+        continue-on-error: true
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test
