@@ -1,6 +1,7 @@
 import { runCommand } from "../runCommand";
 import { useRepo } from "../store/repo";
-import { ArrowDown, ArrowUp, Branch, Refresh, Spinner } from "./Icons";
+import { ArrowDown, ArrowUp, Branch, Refresh } from "./Icons";
+import { BusyProgress } from "./Progress";
 
 export default function StatusBar() {
   const repo = useRepo((s) => s.repo)!;
@@ -8,7 +9,6 @@ export default function StatusBar() {
   const upstream = useRepo((s) => s.upstream);
   const ahead = useRepo((s) => s.ahead);
   const behind = useRepo((s) => s.behind);
-  const busy = useRepo((s) => s.busy);
 
   return (
     <footer className="statusbar">
@@ -32,11 +32,8 @@ export default function StatusBar() {
       <button className="status-item" onClick={() => runCommand("refresh")} title="Refresh (F5)" aria-label="Refresh">
         <Refresh />
       </button>
-      {busy && (
-        <span className="status-busy" role="status">
-          <Spinner size={12} /> {busy}
-        </span>
-      )}
+      {/* Credential prompts, progress & cancel: phase, bar and Cancel button. */}
+      <BusyProgress />
       <span className="status-spacer" />
       <span className="status-item path" title={repo.root}>{repo.root}</span>
     </footer>

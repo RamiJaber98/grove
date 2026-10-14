@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use super::stream::Op;
 use super::{run, GitError, GitResult};
 
 /// The folder name `git clone` would pick for `url`: last path segment,
@@ -15,7 +16,13 @@ fn clone_dir_name(url: &str) -> Option<String> {
 }
 
 /// Clones `url` into a new folder under `parent`. Returns the new repo path.
+#[cfg_attr(not(test), allow(dead_code))] // UI-less callers (tests) use it.
 pub fn clone(url: &str, parent: &Path) -> GitResult<PathBuf> {
+    clone_with(url, parent, &Op::silent())
+}
+
+/// Like `clone`, reporting progress and honouring cancel through `net`.
+pub fn clone_with(url: &str, parent: &Path, net: &Op) -> GitResult<PathBuf> {
     let url = url.trim();
     if url.is_empty() || url.starts_with('-') {
         return Err(GitError::new("Enter a repository URL."));
@@ -26,8 +33,23 @@ pub fn clone(url: &str, parent: &Path) -> GitResult<PathBuf> {
         return Err(GitError::new(format!("{} already exists.", dest.display())));
     }
     // `--` ends options, so the URL can never be read as one.
-    run(parent, &["clone", "--", url, &name])?;
+    if let Err(e) = net.run(parent, &["clone", "--", url, &name]) {
+        // git tidies up after its own failures, but not after being killed.
+        remove_partial_clone(&dest);
+        return Err(e);
+    }
     Ok(dest)
+}
+
+/// Deletes a clone's half-written folder. Retries briefly because killed
+/// processes can hold file handles for a moment on Windows.
+fn remove_partial_clone(dest: &Path) {
+    for _ in 0..20 {
+        if !dest.exists() || std::fs::remove_dir_all(dest).is_ok() {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
 }
 
 /// Runs `git init` in `path` (creating the folder if needed).
@@ -116,5 +138,51 @@ mod tests {
         assert!(dest.join(".git").exists());
         assert!(clone(src.to_str().unwrap(), &tmp.path().join("clones")).is_err(), "already exists");
         assert!(clone("--upload-pack=x", tmp.path()).is_err());
+    }
+
+    #[test]
+    fn cancelled_clone_removes_its_folder() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::{Arc, OnceLock};
+
+        let tmp = tempfile::tempdir().unwrap();
+        let src = tmp.path().join("big");
+        init(&src).unwrap();
+        set_identity(&src, "T", "t@example.com", false).unwrap();
+        // Enough incompressible data that the transfer is still running when
+        // the first progress line arrives.
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        for i in 0..200 {
+            let data: Vec<u8> = (0..20_000)
+                .map(|_| {
+                    seed ^= seed << 13;
+                    seed ^= seed >> 7;
+                    seed ^= seed << 17;
+                    seed as u8
+                })
+                .collect();
+            std::fs::write(src.join(format!("f{i}.bin")), data).unwrap();
+        }
+        run(&src, &["add", "."]).unwrap();
+        run(&src, &["commit", "-qm", "big"]).unwrap();
+
+        let parent = tmp.path().join("clones");
+        std::fs::create_dir(&parent).unwrap();
+        let progressed = Arc::new(AtomicBool::new(false));
+        let seen = progressed.clone();
+        let flag = Arc::new(OnceLock::<Arc<AtomicBool>>::new());
+        let flag2 = flag.clone();
+        let net = Op::new(move |_| {
+            // Cancel as soon as git reports anything, i.e. mid-transfer.
+            seen.store(true, Ordering::SeqCst);
+            flag2.get().unwrap().store(true, Ordering::SeqCst);
+        });
+        flag.set(net.cancel_flag()).unwrap();
+        // file:// forces the regular transport, which reports progress.
+        let url = format!("file:///{}", src.to_str().unwrap().replace('\\', "/").trim_start_matches('/'));
+        let err = clone_with(&url, &parent, &net).unwrap_err();
+        assert!(progressed.load(Ordering::SeqCst), "no progress was reported");
+        assert_eq!(err.message, "Cancelled.");
+        assert!(!parent.join("big").exists(), "partial clone left behind");
     }
 }

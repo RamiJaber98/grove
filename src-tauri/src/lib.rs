@@ -1,3 +1,5 @@
+// Credential prompts: also used by main.rs when Grove runs as askpass.
+pub mod askpass;
 mod commands;
 mod git;
 mod menu;
@@ -68,6 +70,9 @@ pub fn run() {
             commands::stash_branch,
             commands::reveal_repo_file,
             commands::open_in_editor,
+            // Credential prompts, progress & cancel.
+            commands::cancel_git,
+            commands::askpass_answer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

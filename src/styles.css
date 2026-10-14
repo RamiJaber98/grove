@@ -455,3 +455,25 @@ kbd {
 .btn.primary:focus-visible { outline-offset: 2px; }
 .dropdown-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 button.status-item:focus-visible { outline: 2px solid var(--status-text); outline-offset: -2px; }
+
+/* Credential prompts, progress & cancel */
+.progress-phase { opacity: .85; }
+.progress-bar {
+  position: relative; width: 90px; height: 6px; border-radius: 3px; overflow: hidden;
+  background: rgba(255, 255, 255, .25);
+}
+.progress-bar > span { position: absolute; inset: 0 auto 0 0; background: currentColor; transition: width .15s; }
+.progress-percent { min-width: 4ch; font-variant-numeric: tabular-nums; }
+.progress-cancel {
+  height: 18px; padding: 0 8px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, .45);
+  background: none; color: inherit; font: inherit; cursor: pointer;
+}
+.progress-cancel:hover { background: rgba(255, 255, 255, .14); }
+.floating-progress {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 30;
+  max-width: calc(100% - 32px); height: 28px; display: flex; align-items: center; padding: 0 6px;
+  border-radius: 14px; background: var(--status-bg); color: var(--status-text); font-size: 12px; box-shadow: var(--shadow);
+}
+.askpass-backdrop { z-index: 45; }
+.askpass-prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .progress-bar > span { transition: none; } }

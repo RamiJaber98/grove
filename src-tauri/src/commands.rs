@@ -11,6 +11,10 @@ use crate::git::stash::{StashEntry, StashMode};
 use crate::git::status::Status;
 use crate::git::{self, ops, GitError, GitResult, RepoInfo};
 use crate::watcher::RepoWatcher;
+// Credential prompts, progress & cancel.
+use crate::askpass;
+use crate::git::stream::{Op, Progress};
+use tauri::Emitter;
 
 /// Git calls block; run them off the main thread.
 async fn blocking<T: Send + 'static>(f: impl FnOnce() -> GitResult<T> + Send + 'static) -> GitResult<T> {
@@ -102,8 +106,8 @@ pub async fn undo_last_commit(root: String) -> GitResult<String> {
 }
 
 #[tauri::command]
-pub async fn remote_op(root: String, op: RemoteOp) -> GitResult<String> {
-    blocking(move || git::remote::run_op(Path::new(&root), op)).await
+pub async fn remote_op(app: AppHandle, root: String, op: RemoteOp) -> GitResult<String> {
+    network(app, move |net| git::remote::run_op_with(Path::new(&root), op, net)).await
 }
 
 #[tauri::command]
@@ -241,8 +245,11 @@ pub async fn checkout_detached(root: String, hash: String) -> GitResult<()> {
 // Repository setup, identity, and OS integration.
 
 #[tauri::command]
-pub async fn clone_repo(url: String, parent: String) -> GitResult<String> {
-    blocking(move || git::repo::clone(&url, Path::new(&parent)).map(|p| p.to_string_lossy().into_owned())).await
+pub async fn clone_repo(app: AppHandle, url: String, parent: String) -> GitResult<String> {
+    network(app, move |net| {
+        git::repo::clone_with(&url, Path::new(&parent), net).map(|p| p.to_string_lossy().into_owned())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -313,4 +320,58 @@ pub fn reveal_repo_file(app: AppHandle, root: String, path: String) -> GitResult
 #[tauri::command]
 pub fn open_in_editor(app: AppHandle, root: String, paths: Vec<String>) -> GitResult<bool> {
     crate::system::open_in_editor(&app, Path::new(&root), &paths)
+}
+
+// ---- Credential prompts, progress & cancel ----
+
+/// Runs a network operation off the main thread with credential prompts,
+/// `git-progress` events and cancel support. `git-progress-end` always
+/// follows so the UI can drop the progress bar.
+async fn network<T: Send + 'static>(
+    app: AppHandle,
+    f: impl FnOnce(&Op) -> GitResult<T> + Send + 'static,
+) -> GitResult<T> {
+    start_askpass(&app);
+    let done = app.clone();
+    let result = blocking(move || {
+        let _ = app.emit("git-progress", Progress { phase: "Connecting".into(), percent: None });
+        let progress_app = app.clone();
+        let net = Op::new(move |p| {
+            let _ = progress_app.emit("git-progress", p);
+        });
+        f(&net)
+    })
+    .await;
+    let _ = done.emit("git-progress-end", ());
+    result
+}
+
+fn start_askpass(app: &AppHandle) {
+    let (show, close) = (app.clone(), app.clone());
+    askpass::ensure_started(
+        move |prompt| {
+            let _ = show.emit("askpass", prompt);
+        },
+        move |id| {
+            let _ = close.emit("askpass-closed", id);
+        },
+    );
+}
+
+/// The Cancel button: kills running network operations and closes any
+/// credential prompt they were waiting on.
+#[tauri::command]
+pub fn cancel_git() {
+    git::stream::cancel_all();
+    if let Some(server) = askpass::global() {
+        server.cancel_all();
+    }
+}
+
+/// The user's answer to a credential prompt (None = cancelled).
+#[tauri::command]
+pub fn askpass_answer(id: u64, answer: Option<String>) {
+    if let Some(server) = askpass::global() {
+        server.answer(id, answer);
+    }
 }

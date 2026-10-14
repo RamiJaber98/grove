@@ -19,6 +19,8 @@ serde_json = "1"
 notify-debouncer-mini = "0.7"
 tauri-plugin-opener = "2"
 tauri-plugin-window-state = "2"
+# Askpass session token.
+getrandom = "0.3"
 
 [dev-dependencies]
 tempfile = "3"
