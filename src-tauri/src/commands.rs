@@ -261,8 +261,8 @@ pub async fn set_identity(root: String, name: String, email: String, global: boo
 }
 
 #[tauri::command]
-pub fn reveal(app: AppHandle, path: String) -> GitResult<()> {
-    crate::system::reveal(&app, Path::new(&path))
+pub fn open_folder(app: AppHandle, path: String) -> GitResult<()> {
+    crate::system::open_folder(&app, Path::new(&path))
 }
 
 #[tauri::command]

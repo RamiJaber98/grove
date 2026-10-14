@@ -1,8 +1,13 @@
 //! Native application menu. Items carry string ids; clicks are forwarded to
 //! the frontend as a `menu` event whose payload is the id, so all command
-//! handling lives in one place (src/menu.ts).
+//! handling lives in one place (src/runCommand.ts).
+//!
+//! The menu is handed to the Builder rather than attached in `setup`, so the
+//! window is created with it. Attaching it later shrinks the window's content
+//! area by the menu's height after window-state has restored the saved size,
+//! making the window 20px shorter on every launch.
 
-use tauri::menu::{Menu, MenuItem, MenuItemBuilder, SubmenuBuilder};
+use tauri::menu::{Menu, MenuEvent, MenuItem, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Runtime};
 
 fn item<R: Runtime>(
@@ -18,7 +23,7 @@ fn item<R: Runtime>(
     b.build(app)
 }
 
-pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
 
     // macOS convention: About/Settings/Quit live in the app-name menu.
@@ -45,7 +50,7 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .item(&item(app, "clone_repo", "Clone Repository…", None)?)
         .item(&item(app, "init_repo", "Initialize Repository…", None)?)
         .separator()
-        .item(&item(app, "open_in_explorer", reveal_label(), None)?)
+        .item(&item(app, "open_in_explorer", file_manager_label(), None)?)
         .item(&item(app, "open_terminal", "Open Terminal Here", None)?)
         .separator()
         .item(&item(app, "close_repo", "Close Repository", Some("CmdOrCtrl+W"))?);
@@ -124,16 +129,16 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     }
     menu.append(&help.build()?)?;
 
-    app.set_menu(menu)?;
-    app.on_menu_event(|app, event| {
-        let _ = app.emit("menu", event.id().as_ref());
-    });
-    Ok(())
+    Ok(menu)
 }
 
-fn reveal_label() -> &'static str {
+pub fn on_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
+    let _ = app.emit("menu", event.id().as_ref());
+}
+
+fn file_manager_label() -> &'static str {
     if cfg!(target_os = "macos") {
-        "Reveal in Finder"
+        "Open in Finder"
     } else {
         "Open in File Explorer"
     }

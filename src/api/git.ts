@@ -197,7 +197,7 @@ export const git = {
   identity: (root: string) => invoke<Identity>("identity", { root }),
   setIdentity: (root: string, name: string, email: string, global: boolean) =>
     invoke<void>("set_identity", { root, name, email, global }),
-  reveal: (path: string) => invoke<void>("reveal", { path }),
+  openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
   openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
 };

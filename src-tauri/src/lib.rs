@@ -10,10 +10,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(watcher::RepoWatcher::default())
-        .setup(|app| {
-            menu::install(app.handle())?;
-            Ok(())
-        })
+        .menu(menu::build)
+        .on_menu_event(menu::on_event)
         .invoke_handler(tauri::generate_handler![
             commands::launch_path,
             commands::open_repo,
@@ -58,7 +56,7 @@ pub fn run() {
             commands::init_repo,
             commands::identity,
             commands::set_identity,
-            commands::reveal,
+            commands::open_folder,
             commands::open_terminal,
             commands::open_repo_file,
         ])

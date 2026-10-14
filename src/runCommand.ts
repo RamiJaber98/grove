@@ -143,7 +143,7 @@ export async function runCommand(id: string) {
     case "init_repo":
       return repoActions.initRepo();
     case "open_in_explorer":
-      return repoActions.revealRepo();
+      return repoActions.openRepoFolder();
     case "open_terminal":
       return repoActions.openTerminal();
     case "edit_gitignore":

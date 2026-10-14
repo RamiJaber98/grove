@@ -8,9 +8,10 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::git::{repo_path, GitError, GitResult};
 
-pub fn reveal<R: Runtime>(app: &AppHandle<R>, path: &Path) -> GitResult<()> {
+/// Opens `dir` itself in Explorer / Finder.
+pub fn open_folder<R: Runtime>(app: &AppHandle<R>, dir: &Path) -> GitResult<()> {
     app.opener()
-        .reveal_item_in_dir(path)
+        .open_path(dir.to_string_lossy(), None::<&str>)
         .map_err(|e| GitError::new(format!("could not open the file manager: {e}")))
 }
 

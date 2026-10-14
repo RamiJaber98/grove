@@ -51,6 +51,6 @@ function withRoot(fn: (root: string) => Promise<void>) {
   return fn(root).catch((e) => state().toast(errorMessage(e), "error"));
 }
 
-export const revealRepo = () => withRoot((root) => git.reveal(root));
+export const openRepoFolder = () => withRoot((root) => git.openFolder(root));
 export const openTerminal = () => withRoot((root) => git.openTerminal(root));
 export const editGitignore = () => withRoot((root) => git.openRepoFile(root, ".gitignore", true));

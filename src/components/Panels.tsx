@@ -23,7 +23,7 @@ export default function Panels() {
   const title = { settings: "Settings", shortcuts: "Keyboard Shortcuts", about: "About Grove" }[panel];
   return (
     <div className="dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && openPanel(null)}>
-      <div className={`dialog panel-dialog ${panel}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div className={`dialog panel-dialog panel-${panel}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="panel-dialog-head">
           <div className="dialog-title">{title}</div>
           <button className="icon-btn" onClick={() => openPanel(null)} aria-label="Close">
