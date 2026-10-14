@@ -129,6 +129,17 @@ export default function DiffView() {
             <span className="muted">No file selected</span>
           )}
         </div>
+        {/* File history and blame for the selected file. */}
+        {selection && (
+          <div className="diff-nav">
+            <button className="btn small" title="Commits that changed this file" onClick={() => runCommand("file_history")}>
+              History
+            </button>
+            <button className="btn small" title="Who last changed each line" onClick={() => runCommand("blame_file")}>
+              Blame
+            </button>
+          </div>
+        )}
         {versions && !blocked && (
           <div className="diff-nav">
             <button className="icon-btn" title="Previous change (Shift+F7)" onClick={() => runCommand("prev_change")} disabled={!stats?.hunks}>

@@ -94,6 +94,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&theme)
         .separator()
         .item(&item(app, "show_history", "History", Some("CmdOrCtrl+Shift+H"))?)
+        // File history and blame for the file selected in the diff.
+        .item(&item(app, "file_history", "File History", None)?)
+        .item(&item(app, "blame_file", "Blame", None)?)
         .item(&item(app, "refresh", "Refresh", Some("F5"))?)
         .build()?;
     menu.append(&view)?;

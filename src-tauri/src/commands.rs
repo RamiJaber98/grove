@@ -274,3 +274,16 @@ pub fn open_terminal(path: String) -> GitResult<()> {
 pub fn open_repo_file(app: AppHandle, root: String, path: String, create: bool) -> GitResult<()> {
     crate::system::open_repo_file(&app, Path::new(&root), &path, create)
 }
+
+// File history and blame.
+
+#[tauri::command]
+pub async fn file_log(root: String, path: String, skip: usize, limit: usize) -> GitResult<Vec<git::file_log::FileLogEntry>> {
+    blocking(move || git::file_log::file_log(Path::new(&root), &path, skip, limit)).await
+}
+
+/// `rev` is `None` for the working tree, else `HEAD` or a commit hash.
+#[tauri::command]
+pub async fn blame(root: String, path: String, rev: Option<String>) -> GitResult<git::blame::Blame> {
+    blocking(move || git::blame::blame(Path::new(&root), &path, rev.as_deref())).await
+}

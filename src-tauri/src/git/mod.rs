@@ -2,8 +2,10 @@
 //! Grove goes through `run`/`run_with_stdin`, so behaviour matches the
 //! terminal exactly (credentials, hooks, config, SSH keys).
 
+pub mod blame;
 pub mod commit;
 pub mod diff;
+pub mod file_log;
 pub mod log;
 pub mod ops;
 pub mod refs;

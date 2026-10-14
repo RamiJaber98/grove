@@ -402,3 +402,36 @@ kbd {
 .about { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0 4px; }
 .about-name { font-size: 16px; font-weight: 600; }
 .about p { margin: 6px 0 0; }
+
+/* File history and blame */
+.spacer { flex: 1; }
+.file-log-row { padding-left: 12px; }
+.file-log-path {
+  flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; border-radius: 4px;
+  background: var(--bg-hover); color: var(--text-muted); font: 11px var(--mono);
+}
+.file-commit-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.file-commit-info {
+  flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap;
+  border-bottom: 1px solid var(--border); background: var(--bg-panel); overflow: hidden;
+}
+.file-commit-info .commit-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.blame-bar {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; white-space: nowrap;
+  border-bottom: 1px solid var(--border); background: var(--bg-panel); overflow: hidden;
+}
+.blame { flex: 1; min-height: 0; display: flex; }
+.blame-gutter {
+  flex: 0 0 260px; position: relative; overflow: hidden; border-right: 1px solid var(--border); background: var(--bg-panel);
+}
+.blame-hunk {
+  position: absolute; left: 0; right: 0; display: flex; gap: 8px; padding: 0 8px 0 6px; overflow: hidden;
+  border-left: 3px solid transparent; border-top: 1px solid var(--border); cursor: pointer; white-space: nowrap;
+  color: var(--text-muted);
+}
+.blame-hunk:hover, .blame-hunk.hovered { background: var(--bg-hover); color: var(--text); }
+.blame-hunk.uncommitted { border-left-color: var(--kind-M); cursor: default; font-style: italic; }
+.blame-hash { flex: none; font-family: var(--mono); }
+.blame-author { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.blame-date { flex: none; }
+.blame-line-hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
