@@ -58,7 +58,7 @@ fn is_relevant(git_dir: &Path, path: &Path) -> bool {
     match parts.as_slice() {
         [] => false,
         [name, ..] if name.ends_with(".lock") => false,
-        [file] => matches!(*file, "index" | "HEAD" | "packed-refs" | "MERGE_HEAD" | "REBASE_HEAD"),
+        [file] => matches!(*file, "index" | "HEAD" | "packed-refs" | "MERGE_HEAD" | "REBASE_HEAD" | "CHERRY_PICK_HEAD" | "REVERT_HEAD"),
         ["refs", ..] | ["logs", "refs", "stash"] => !parts.last().is_some_and(|l| l.ends_with(".lock")),
         _ => false,
     }

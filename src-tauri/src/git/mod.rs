@@ -5,6 +5,7 @@
 pub mod commit;
 pub mod diff;
 pub mod ops;
+pub mod refs;
 pub mod remote;
 pub mod stash;
 pub mod status;

@@ -14,7 +14,7 @@ const subject = (message: string) => message.split("\n")[0];
  * Runs `fn` while showing `label` as the busy state. Only one long-running
  * operation at a time; git would refuse overlapping index writes anyway.
  */
-async function withBusy(label: string, fn: (root: string) => Promise<void>) {
+export async function withBusy(label: string, fn: (root: string) => Promise<void>) {
   const s = useRepo.getState();
   if (!s.repo) return;
   if (s.busy) {
@@ -125,6 +125,7 @@ const REMOTE_LABEL: Record<RemoteOp, string> = {
   pull_rebase: "Pulling…",
   push: "Pushing…",
   push_force: "Force pushing…",
+  push_tags: "Pushing tags…",
   sync: "Syncing…",
 };
 

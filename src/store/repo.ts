@@ -36,6 +36,7 @@ interface State {
   staged: FileChange[];
   changes: FileChange[];
   conflicts: FileChange[];
+  operation: Status["operation"];
   stashes: StashEntry[];
 
   selection: Selection | null;
@@ -81,6 +82,7 @@ const EMPTY_STATUS = {
   staged: [],
   changes: [],
   conflicts: [],
+  operation: null,
   stashes: [],
 };
 

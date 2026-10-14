@@ -29,6 +29,23 @@ pub fn run() {
             commands::stash_push,
             commands::stash_apply,
             commands::stash_drop,
+            commands::branches,
+            commands::checkout,
+            commands::create_branch,
+            commands::rename_branch,
+            commands::delete_branch,
+            commands::merge,
+            commands::rebase,
+            commands::operation,
+            commands::tags,
+            commands::create_tag,
+            commands::delete_tag,
+            commands::remotes,
+            commands::add_remote,
+            commands::remove_remote,
+            commands::reset,
+            commands::clean,
+            commands::recent_commits,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Grove");

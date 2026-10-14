@@ -54,7 +54,7 @@ export const COMMANDS: Record<string, CommandInfo> = {
   stage_all: { label: "Stage All Changes" },
   unstage_all: { label: "Unstage All Changes" },
   discard_all: { label: "Discard All Changes", danger: true },
-  clean_untracked: { label: "Delete Untracked Files", phase: 6, danger: true },
+  clean_untracked: { label: "Delete Untracked Files", danger: true },
 
   // Stash
   stash: { label: "Stash" },
@@ -65,29 +65,29 @@ export const COMMANDS: Record<string, CommandInfo> = {
   stash_drop: { label: "Drop Stash…", danger: true },
 
   // Branch
-  checkout_branch: { label: "Checkout…", phase: 6 },
-  new_branch: { label: "New Branch…", phase: 6 },
-  rename_branch: { label: "Rename Branch…", phase: 6 },
-  merge_branch: { label: "Merge Into Current…", phase: 6 },
-  rebase_branch: { label: "Rebase Current Onto…", phase: 6 },
-  delete_branch: { label: "Delete Branch…", phase: 6, danger: true },
+  checkout_branch: { label: "Checkout…" },
+  new_branch: { label: "New Branch…" },
+  rename_branch: { label: "Rename Branch…" },
+  merge_branch: { label: "Merge Into Current…" },
+  rebase_branch: { label: "Rebase Current Onto…" },
+  delete_branch: { label: "Delete Branch…", danger: true },
 
   // Tags
-  add_tag: { label: "Create Tag…", phase: 6 },
-  delete_tag: { label: "Delete Tag…", phase: 6, danger: true },
-  push_tags: { label: "Push Tags", phase: 6 },
+  add_tag: { label: "Create Tag…" },
+  delete_tag: { label: "Delete Tag…", danger: true },
+  push_tags: { label: "Push Tags" },
 
   // Remotes
-  manage_remotes: { label: "Remotes…", phase: 6 },
-  add_remote: { label: "Add Remote…", phase: 6 },
-  remove_remote: { label: "Remove Remote…", phase: 6, danger: true },
+  manage_remotes: { label: "Remotes…" },
+  add_remote: { label: "Add Remote…" },
+  remove_remote: { label: "Remove Remote…", danger: true },
 
   // History / advanced
   cherry_pick: { label: "Cherry-Pick…", phase: 7 },
   revert_commit: { label: "Revert Commit…", phase: 7 },
-  reset_soft: { label: "Reset (Soft)…", phase: 6 },
-  reset_mixed: { label: "Reset (Mixed)…", phase: 6 },
-  reset_hard: { label: "Reset (Hard)…", phase: 6, danger: true },
+  reset_soft: { label: "Reset (Soft)…" },
+  reset_mixed: { label: "Reset (Mixed)…" },
+  reset_hard: { label: "Reset (Hard)…", danger: true },
 
   // Repository
   edit_gitignore: { label: "Edit .gitignore", phase: 8 },

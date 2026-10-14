@@ -1,5 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import * as actions from "./actions";
+import * as refs from "./refActions";
 import type { RemoteOp } from "./api/git";
 import { COMMANDS } from "./commands";
 import { getActiveDiffEditor } from "./diffEditorHandle";
@@ -44,6 +45,38 @@ export async function runCommand(id: string) {
       return actions.applyStash(true);
     case "stash_drop":
       return actions.dropStash();
+    case "checkout_branch":
+      return refs.checkoutBranch();
+    case "new_branch":
+      return refs.newBranch();
+    case "rename_branch":
+      return refs.renameBranch();
+    case "delete_branch":
+      return refs.deleteBranch();
+    case "merge_branch":
+      return refs.mergeBranch();
+    case "rebase_branch":
+      return refs.rebaseBranch();
+    case "add_tag":
+      return refs.createTag();
+    case "delete_tag":
+      return refs.deleteTag();
+    case "push_tags":
+      return refs.pushTags();
+    case "manage_remotes":
+      return refs.manageRemotes();
+    case "add_remote":
+      return refs.addRemote();
+    case "remove_remote":
+      return refs.removeRemote();
+    case "reset_soft":
+      return refs.resetTo("soft");
+    case "reset_mixed":
+      return refs.resetTo("mixed");
+    case "reset_hard":
+      return refs.resetTo("hard");
+    case "clean_untracked":
+      return refs.cleanUntracked();
     case "open_repo":
       return pickAndOpenRepo();
     case "close_repo":

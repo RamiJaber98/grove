@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { FileChange } from "../api/git";
 import * as actions from "../actions";
+import { finishOperation } from "../refActions";
 import { runCommand } from "../runCommand";
 import { useRepo, type Group } from "../store/repo";
 import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
@@ -22,6 +23,7 @@ export default function ChangesPanel({ width }: { width: number }) {
   const busy = useRepo((s) => s.busy);
   const ahead = useRepo((s) => s.ahead);
   const behind = useRepo((s) => s.behind);
+  const operation = useRepo((s) => s.operation);
   const { stage, unstage, unstageAll, discard } = useRepo.getState();
 
   const hasMessage = message.trim().length > 0;
@@ -76,6 +78,30 @@ export default function ChangesPanel({ width }: { width: number }) {
           }}
         />
       </div>
+
+      {operation && (
+        <div className="op-banner" role="status">
+          <div className="op-text">
+            <strong>{operation[0].toUpperCase() + operation.slice(1)} in progress.</strong>{" "}
+            {conflicts.length
+              ? `Resolve ${conflicts.length} conflicted file${conflicts.length === 1 ? "" : "s"}, stage them, then continue.`
+              : "Conflicts resolved. Continue to finish."}
+          </div>
+          <div className="op-buttons">
+            <button className="btn small" onClick={() => finishOperation("abort")} disabled={!!busy}>
+              Abort
+            </button>
+            <button
+              className="btn small primary"
+              onClick={() => finishOperation("continue")}
+              disabled={!!busy || conflicts.length > 0}
+              title={conflicts.length ? "Resolve and stage all conflicts first" : `Finish the ${operation}`}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="groups">
         {conflicts.length > 0 && (

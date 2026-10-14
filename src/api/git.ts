@@ -24,7 +24,39 @@ export interface Status {
   staged: FileChange[];
   changes: FileChange[];
   conflicts: FileChange[];
+  /** In-progress multi-step operation, if any. */
+  operation: "merge" | "rebase" | "cherry-pick" | "revert" | null;
 }
+
+export interface Branch {
+  name: string;
+  remote: boolean;
+  current: boolean;
+  upstream: string | null;
+  hash: string;
+  subject: string;
+  time: number;
+}
+
+export interface Tag {
+  name: string;
+  subject: string;
+}
+
+export interface Remote {
+  name: string;
+  url: string;
+}
+
+export interface Commit {
+  hash: string;
+  short: string;
+  subject: string;
+  author: string;
+  time: number;
+}
+
+export type ResetMode = "soft" | "mixed" | "hard";
 
 export interface StashEntry {
   /** e.g. "stash@{0}" */
@@ -72,6 +104,7 @@ export type RemoteOp =
   | "pull_rebase"
   | "push"
   | "push_force"
+  | "push_tags"
   | "sync";
 
 export const git = {
@@ -99,4 +132,26 @@ export const git = {
   stashApply: (root: string, stashRef: string, pop: boolean) =>
     invoke<void>("stash_apply", { root, stashRef, pop }),
   stashDrop: (root: string, stashRef: string) => invoke<void>("stash_drop", { root, stashRef }),
+  branches: (root: string) => invoke<Branch[]>("branches", { root }),
+  /** Returns the local branch name that's now checked out. */
+  checkout: (root: string, name: string, remote: boolean) => invoke<string>("checkout", { root, name, remote }),
+  createBranch: (root: string, name: string, start: string | null, switchTo: boolean) =>
+    invoke<void>("create_branch", { root, name, start, switch: switchTo }),
+  renameBranch: (root: string, old: string, newName: string) =>
+    invoke<void>("rename_branch", { root, old, new: newName }),
+  deleteBranch: (root: string, name: string, force: boolean) => invoke<void>("delete_branch", { root, name, force }),
+  merge: (root: string, name: string) => invoke<string>("merge", { root, name }),
+  rebase: (root: string, onto: string) => invoke<string>("rebase", { root, onto }),
+  operation: (root: string, kind: string, action: "abort" | "continue") =>
+    invoke<void>("operation", { root, kind, action }),
+  tags: (root: string) => invoke<Tag[]>("tags", { root }),
+  createTag: (root: string, name: string, message: string) => invoke<void>("create_tag", { root, name, message }),
+  deleteTag: (root: string, name: string) => invoke<void>("delete_tag", { root, name }),
+  remotes: (root: string) => invoke<Remote[]>("remotes", { root }),
+  addRemote: (root: string, name: string, url: string) => invoke<void>("add_remote", { root, name, url }),
+  removeRemote: (root: string, name: string) => invoke<void>("remove_remote", { root, name }),
+  reset: (root: string, target: string, mode: ResetMode) => invoke<void>("reset", { root, target, mode }),
+  /** Returns how many paths were deleted. */
+  clean: (root: string) => invoke<number>("clean", { root }),
+  recentCommits: (root: string, limit: number) => invoke<Commit[]>("recent_commits", { root, limit }),
 };

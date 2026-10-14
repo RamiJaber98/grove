@@ -318,3 +318,11 @@ button.status-item:hover { background: rgba(255, 255, 255, .14); }
 .pick-label { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-detail { min-width: 0; font-size: 12px; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-empty { padding: 10px; color: var(--text-muted); }
+
+/* Merge / rebase in progress */
+.op-banner {
+  margin: 0 10px 8px; padding: 8px 10px; border-radius: var(--radius);
+  border: 1px solid var(--kind-conflict); background: color-mix(in srgb, var(--kind-conflict) 10%, transparent);
+  font-size: 12px;
+}
+.op-buttons { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }

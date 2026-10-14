@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, State};
 
 use crate::git::diff::FileVersions;
+use crate::git::refs::{Branch, Commit, OperationAction, Remote, ResetMode, Tag};
 use crate::git::remote::RemoteOp;
 use crate::git::stash::{StashEntry, StashMode};
 use crate::git::status::Status;
@@ -123,4 +124,91 @@ pub async fn stash_apply(root: String, stash_ref: String, pop: bool) -> GitResul
 #[tauri::command]
 pub async fn stash_drop(root: String, stash_ref: String) -> GitResult<()> {
     blocking(move || git::stash::drop_stash(Path::new(&root), &stash_ref)).await
+}
+
+// Branches, tags, remotes, history operations. Thin wrappers over git::refs.
+
+#[tauri::command]
+pub async fn branches(root: String) -> GitResult<Vec<Branch>> {
+    blocking(move || git::refs::branches(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn checkout(root: String, name: String, remote: bool) -> GitResult<String> {
+    blocking(move || git::refs::checkout(Path::new(&root), &name, remote)).await
+}
+
+#[tauri::command]
+pub async fn create_branch(root: String, name: String, start: Option<String>, switch: bool) -> GitResult<()> {
+    blocking(move || git::refs::create_branch(Path::new(&root), &name, start.as_deref(), switch)).await
+}
+
+#[tauri::command]
+pub async fn rename_branch(root: String, old: String, new: String) -> GitResult<()> {
+    blocking(move || git::refs::rename_branch(Path::new(&root), &old, &new)).await
+}
+
+#[tauri::command]
+pub async fn delete_branch(root: String, name: String, force: bool) -> GitResult<()> {
+    blocking(move || git::refs::delete_branch(Path::new(&root), &name, force)).await
+}
+
+#[tauri::command]
+pub async fn merge(root: String, name: String) -> GitResult<String> {
+    blocking(move || git::refs::merge(Path::new(&root), &name)).await
+}
+
+#[tauri::command]
+pub async fn rebase(root: String, onto: String) -> GitResult<String> {
+    blocking(move || git::refs::rebase(Path::new(&root), &onto)).await
+}
+
+#[tauri::command]
+pub async fn operation(root: String, kind: String, action: OperationAction) -> GitResult<()> {
+    blocking(move || git::refs::operation(Path::new(&root), &kind, action)).await
+}
+
+#[tauri::command]
+pub async fn tags(root: String) -> GitResult<Vec<Tag>> {
+    blocking(move || git::refs::tags(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn create_tag(root: String, name: String, message: String) -> GitResult<()> {
+    blocking(move || git::refs::create_tag(Path::new(&root), &name, &message)).await
+}
+
+#[tauri::command]
+pub async fn delete_tag(root: String, name: String) -> GitResult<()> {
+    blocking(move || git::refs::delete_tag(Path::new(&root), &name)).await
+}
+
+#[tauri::command]
+pub async fn remotes(root: String) -> GitResult<Vec<Remote>> {
+    blocking(move || git::refs::remotes(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn add_remote(root: String, name: String, url: String) -> GitResult<()> {
+    blocking(move || git::refs::add_remote(Path::new(&root), &name, &url)).await
+}
+
+#[tauri::command]
+pub async fn remove_remote(root: String, name: String) -> GitResult<()> {
+    blocking(move || git::refs::remove_remote(Path::new(&root), &name)).await
+}
+
+#[tauri::command]
+pub async fn reset(root: String, target: String, mode: ResetMode) -> GitResult<()> {
+    blocking(move || git::refs::reset(Path::new(&root), &target, mode)).await
+}
+
+#[tauri::command]
+pub async fn clean(root: String) -> GitResult<usize> {
+    blocking(move || git::refs::clean(Path::new(&root))).await
+}
+
+#[tauri::command]
+pub async fn recent_commits(root: String, limit: usize) -> GitResult<Vec<Commit>> {
+    blocking(move || git::refs::recent_commits(Path::new(&root), limit)).await
 }

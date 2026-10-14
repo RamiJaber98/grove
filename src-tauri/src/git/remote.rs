@@ -21,6 +21,7 @@ pub enum RemoteOp {
     PullRebase,
     Push,
     PushForce,
+    PushTags,
     Sync,
 }
 
@@ -34,6 +35,11 @@ pub fn run_op(root: &Path, op: RemoteOp) -> GitResult<String> {
         RemoteOp::PullRebase => pull(root, true),
         RemoteOp::Push => push(root, false),
         RemoteOp::PushForce => push(root, true),
+        RemoteOp::PushTags => {
+            let remote = default_remote(root)?;
+            run(root, &["push", &remote, "--tags"])?;
+            Ok(format!("Pushed tags to {remote}."))
+        }
         RemoteOp::Sync => {
             pull(root, false)?;
             push(root, false).map(|pushed| format!("Synced. {pushed}"))

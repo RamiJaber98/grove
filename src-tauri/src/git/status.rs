@@ -31,6 +31,9 @@ pub struct Status {
     pub staged: Vec<FileChange>,
     pub changes: Vec<FileChange>,
     pub conflicts: Vec<FileChange>,
+    /// A multi-step operation waiting on the user: "merge", "rebase",
+    /// "cherry-pick" or "revert".
+    pub operation: Option<String>,
 }
 
 pub fn status(root: &Path) -> GitResult<Status> {
@@ -38,7 +41,31 @@ pub fn status(root: &Path) -> GitResult<Status> {
         root,
         &["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"],
     )?;
-    Ok(parse(&out))
+    let mut s = parse(&out);
+    s.operation = operation(root)?;
+    Ok(s)
+}
+
+/// Detects an in-progress operation from the marker files git leaves in
+/// the git directory (asked via --git-path so worktrees work too).
+fn operation(root: &Path) -> GitResult<Option<String>> {
+    const MARKERS: [(&str, &str); 5] = [
+        ("rebase-merge", "rebase"),
+        ("rebase-apply", "rebase"),
+        ("MERGE_HEAD", "merge"),
+        ("CHERRY_PICK_HEAD", "cherry-pick"),
+        ("REVERT_HEAD", "revert"),
+    ];
+    let mut args = vec!["rev-parse"];
+    for (marker, _) in MARKERS {
+        args.extend(["--git-path", marker]);
+    }
+    let out = run(root, &args)?;
+    Ok(out
+        .lines()
+        .zip(MARKERS)
+        .find(|(path, _)| root.join(path).exists())
+        .map(|(_, (_, op))| op.to_string()))
 }
 
 /// Maps a porcelain XY status letter to the letter shown in the panel.

@@ -104,7 +104,8 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 
     let branch = SubmenuBuilder::new(app, "Branch")
         .item(&item(app, "new_branch", "New Branch…", Some("CmdOrCtrl+Shift+N"))?)
-        .item(&item(app, "checkout_branch", "Checkout…", None)?)
+        .item(&item(app, "checkout_branch", "Checkout…", Some("CmdOrCtrl+Shift+B"))?)
+        .item(&item(app, "rename_branch", "Rename Current Branch…", None)?)
         .separator()
         .item(&item(app, "merge_branch", "Merge Into Current…", None)?)
         .item(&item(app, "rebase_branch", "Rebase Current Onto…", None)?)
