@@ -201,3 +201,27 @@ export const git = {
   openTerminal: (path: string) => invoke<void>("open_terminal", { path }),
   openRepoFile: (root: string, path: string, create: boolean) => invoke<void>("open_repo_file", { root, path, create }),
 };
+
+// ---- Credential prompts, progress & cancel (network operations) ----
+
+/** `git-progress` event: the current phase of a clone/fetch/pull/push. */
+export interface GitProgress {
+  phase: string;
+  /** Null for phases git reports as a bare count. */
+  percent: number | null;
+}
+
+/** `askpass` event: git or ssh needs a username, password or passphrase. */
+export interface AskpassPrompt {
+  id: number;
+  prompt: string;
+  /** Mask the input (passwords, passphrases). */
+  secret: boolean;
+}
+
+export const network = {
+  /** Kills the running network operation and closes its credential prompt. */
+  cancel: () => invoke<void>("cancel_git"),
+  /** Answers a credential prompt; null cancels it. */
+  answerPrompt: (id: number, answer: string | null) => invoke<void>("askpass_answer", { id, answer }),
+};

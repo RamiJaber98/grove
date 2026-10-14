@@ -1,14 +1,16 @@
 //! Network operations: fetch, pull, push, sync.
 //!
 //! These use whatever credentials git is configured with (Git Credential
-//! Manager, macOS keychain, SSH agent). Terminal prompts are disabled, so a
-//! missing credential fails with git's message instead of hanging.
+//! Manager, macOS keychain, SSH agent). Terminal prompts are disabled; when
+//! nothing else supplies a credential, git asks Grove through the askpass
+//! bridge. Network commands go through `stream::Op` for progress and cancel.
 
 use std::path::Path;
 
 use serde::Deserialize;
 
 use super::status::status;
+use super::stream::Op;
 use super::{run, GitError, GitResult};
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -26,30 +28,36 @@ pub enum RemoteOp {
 }
 
 /// Runs `op` and returns a one-line summary for the UI.
+#[cfg_attr(not(test), allow(dead_code))] // UI-less callers (tests) use it.
 pub fn run_op(root: &Path, op: RemoteOp) -> GitResult<String> {
+    run_op_with(root, op, &Op::silent())
+}
+
+/// Like `run_op`, reporting progress and honouring cancel through `net`.
+pub fn run_op_with(root: &Path, op: RemoteOp, net: &Op) -> GitResult<String> {
     match op {
-        RemoteOp::Fetch => fetch(root, &["fetch"]),
-        RemoteOp::FetchPrune => fetch(root, &["fetch", "--prune"]),
-        RemoteOp::FetchAll => fetch(root, &["fetch", "--all", "--prune"]),
-        RemoteOp::Pull => pull(root, false),
-        RemoteOp::PullRebase => pull(root, true),
-        RemoteOp::Push => push(root, false),
-        RemoteOp::PushForce => push(root, true),
+        RemoteOp::Fetch => fetch(root, &["fetch"], net),
+        RemoteOp::FetchPrune => fetch(root, &["fetch", "--prune"], net),
+        RemoteOp::FetchAll => fetch(root, &["fetch", "--all", "--prune"], net),
+        RemoteOp::Pull => pull(root, false, net),
+        RemoteOp::PullRebase => pull(root, true, net),
+        RemoteOp::Push => push(root, false, net),
+        RemoteOp::PushForce => push(root, true, net),
         RemoteOp::PushTags => {
             let remote = default_remote(root)?;
-            run(root, &["push", &remote, "--tags"])?;
+            net.run(root, &["push", &remote, "--tags"])?;
             Ok(format!("Pushed tags to {remote}."))
         }
         RemoteOp::Sync => {
-            pull(root, false)?;
-            push(root, false).map(|pushed| format!("Synced. {pushed}"))
+            pull(root, false, net)?;
+            push(root, false, net).map(|pushed| format!("Synced. {pushed}"))
         }
     }
 }
 
-fn fetch(root: &Path, args: &[&str]) -> GitResult<String> {
+fn fetch(root: &Path, args: &[&str], net: &Op) -> GitResult<String> {
     require_remote(root)?;
-    run(root, args)?;
+    net.run(root, args)?;
     let s = status(root)?;
     Ok(match (&s.upstream, s.behind) {
         (Some(up), 0) => format!("Fetched. {} is up to date with {up}.", branch_name(&s.branch)),
@@ -58,7 +66,7 @@ fn fetch(root: &Path, args: &[&str]) -> GitResult<String> {
     })
 }
 
-fn pull(root: &Path, rebase: bool) -> GitResult<String> {
+fn pull(root: &Path, rebase: bool, net: &Op) -> GitResult<String> {
     let s = status(root)?;
     let branch = s
         .branch
@@ -70,7 +78,7 @@ fn pull(root: &Path, rebase: bool) -> GitResult<String> {
     if rebase {
         args.push("--rebase");
     }
-    let out = run(root, &args)?;
+    let out = net.run(root, &args)?;
     Ok(if out.contains("Already up to date") {
         format!("{branch} is already up to date with {upstream}.")
     } else {
@@ -78,7 +86,7 @@ fn pull(root: &Path, rebase: bool) -> GitResult<String> {
     })
 }
 
-fn push(root: &Path, force: bool) -> GitResult<String> {
+fn push(root: &Path, force: bool, net: &Op) -> GitResult<String> {
     let s = status(root)?;
     let branch = s
         .branch
@@ -97,14 +105,14 @@ fn push(root: &Path, force: bool) -> GitResult<String> {
             if s.ahead == 0 && !force {
                 return Ok(format!("Nothing to push. {branch} is up to date with {upstream}."));
             }
-            run(root, &args)?;
+            net.run(root, &args)?;
             Ok(format!("Pushed {} commit{} to {upstream}.", s.ahead, plural(s.ahead)))
         }
         None => {
             // First push of this branch: publish it and track the remote copy.
             let remote = default_remote(root)?;
             args.extend(["-u", &remote, &branch]);
-            run(root, &args)?;
+            net.run(root, &args)?;
             Ok(format!("Published {branch} to {remote}/{branch}."))
         }
     }

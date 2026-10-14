@@ -10,12 +10,18 @@ import Workspace from "./components/Workspace";
 import Toasts from "./components/Toasts";
 import Dialog from "./components/Dialog";
 import Panels from "./components/Panels";
+// Credential prompts, progress & cancel.
+import AskpassDialog from "./components/AskpassDialog";
+import { FloatingProgress } from "./components/Progress";
+import { installProgressListeners } from "./progress";
 
 export default function App() {
   const repo = useRepo((s) => s.repo);
   const theme = useRepo((s) => s.theme);
 
   useEffect(installShortcuts, []);
+  // Credential prompts, progress & cancel: progress events for the busy indicator.
+  useEffect(installProgressListeners, []);
 
   // Native menu clicks arrive as `menu` events carrying the item id.
   useEffect(() => {
@@ -65,6 +71,8 @@ export default function App() {
       {repo ? <Workspace /> : <Welcome />}
       <Panels />
       <Dialog />
+      <AskpassDialog />
+      <FloatingProgress />
       <Toasts />
     </>
   );

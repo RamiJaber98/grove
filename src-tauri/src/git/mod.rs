@@ -11,6 +11,8 @@ pub mod remote;
 pub mod repo;
 pub mod stash;
 pub mod status;
+// Credential prompts, progress & cancel: streaming runner for network ops.
+pub mod stream;
 
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
