@@ -620,3 +620,6 @@ button.status-item:focus-visible { outline: 2px solid var(--status-text); outlin
 .sig-badge.good { color: var(--accent); }
 .sig-badge.warn { color: var(--warn); }
 .sig-badge.bad { color: var(--danger); }
+
+/* History rows without the graph (while filtering) still need a left inset. */
+.commit-row.no-graph { padding-left: 12px; }

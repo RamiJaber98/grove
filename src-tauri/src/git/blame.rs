@@ -74,6 +74,13 @@ pub fn blame(root: &Path, path: &str, rev: Option<&str>) -> GitResult<Blame> {
         return Ok(Blame { too_large: true, ..Default::default() });
     }
 
+    // git blame refuses files that aren't in HEAD (new, untracked, or no
+    // commits yet). Every line of those is uncommitted, so say that directly.
+    if rev.is_none() && run_bytes(root, &["cat-file", "-e", &format!("HEAD:{path}")]).is_err() {
+        let bytes = std::fs::read(&full).map_err(|e| GitError::new(format!("could not read {path}: {e}")))?;
+        return Ok(all_uncommitted(path, &bytes));
+    }
+
     let mut args = vec!["blame", "--porcelain", "-w", "-M"];
     args.extend(rev);
     args.extend(["--", path]);
@@ -90,6 +97,32 @@ pub fn blame(root: &Path, path: &str, rev: Option<&str>) -> GitResult<Blame> {
         }
     });
     Ok(blame)
+}
+
+/// A blame where every line is uncommitted, for files git can't blame yet.
+fn all_uncommitted(path: &str, bytes: &[u8]) -> Blame {
+    if bytes[..bytes.len().min(8000)].contains(&0) {
+        return Blame { binary: true, ..Default::default() };
+    }
+    let text = String::from_utf8_lossy(bytes).into_owned();
+    let count = text.lines().count();
+    let mut blame = Blame { text, ..Default::default() };
+    if count > 0 {
+        blame.hunks.push(BlameHunk { start: 1, count, hash: UNCOMMITTED.into() });
+        blame.commits.insert(
+            UNCOMMITTED.into(),
+            BlameCommit {
+                hash: UNCOMMITTED.into(),
+                short: UNCOMMITTED[..7].into(),
+                author: "Not committed yet".into(),
+                time: 0,
+                summary: "Not committed yet".into(),
+                path: path.into(),
+                uncommitted: true,
+            },
+        );
+    }
+    blame
 }
 
 /// Parses `git blame --porcelain`: per line a `<hash> <orig> <final> [<n>]`
@@ -191,5 +224,23 @@ mod tests {
         run(root, &["add", "bin.dat"]).unwrap();
         run(root, &["commit", "-qm", "bin"]).unwrap();
         assert!(blame(root, "bin.dat", None).unwrap().binary);
+    }
+
+    #[test]
+    fn untracked_and_unborn_files_are_all_uncommitted() {
+        let dir = crate::git::file_log::tests::repo();
+        let root = dir.path();
+        // No commits yet: git blame itself would fail here.
+        std::fs::write(root.join("new.txt"), "one\ntwo\n").unwrap();
+        let b = blame(root, "new.txt", None).unwrap();
+        assert_eq!(b.text, "one\ntwo\n");
+        assert_eq!(b.hunks, vec![BlameHunk { start: 1, count: 2, hash: UNCOMMITTED.into() }]);
+        assert!(b.commits[UNCOMMITTED].uncommitted);
+
+        run(root, &["commit", "--allow-empty", "-qm", "init"]).unwrap();
+        assert_eq!(blame(root, "new.txt", None).unwrap().hunks.len(), 1, "untracked after a commit");
+        assert!(blame(root, "new.txt", Some("HEAD")).is_err(), "not in HEAD");
+        std::fs::write(root.join("empty.txt"), "").unwrap();
+        assert!(blame(root, "empty.txt", None).unwrap().hunks.is_empty());
     }
 }

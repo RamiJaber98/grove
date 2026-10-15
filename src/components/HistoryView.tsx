@@ -188,7 +188,7 @@ export default function HistoryView() {
             data-hash={c.hash}
             role="option"
             aria-selected={c.hash === selected || picked.includes(c.hash)}
-            className={`commit-row ${c.hash === selected ? "selected" : ""} ${picked.includes(c.hash) ? "picked" : ""}`}
+            className={`commit-row ${graph.length ? "" : "no-graph"} ${c.hash === selected ? "selected" : ""} ${picked.includes(c.hash) ? "picked" : ""}`}
             onClick={(e) => select(c.hash, e.ctrlKey || e.metaKey)}
           >
             {graph.length > 0 && <GraphCell row={graph[i]} width={graphWidth} merge={c.parents.length > 1} />}

@@ -47,6 +47,7 @@ function Editor({ session }: { session: RebaseSession }) {
   const busy = useRepo((s) => s.busy);
   // Untracked files don't get in a rebase's way; tracked changes do.
   const dirty = useRepo((s) => s.staged.length > 0 || s.conflicts.length > 0 || s.changes.some((f) => f.kind !== "U"));
+  const hasStaged = useRepo((s) => s.staged.length > 0);
 
   const gs = useMemo(() => groups(rows), [rows]);
   const result = check(plan, rows, edited);
@@ -266,6 +267,10 @@ function Editor({ session }: { session: RebaseSession }) {
             <input type="checkbox" checked={autostash} onChange={(e) => setAutostash(e.target.checked)} />
             You have uncommitted changes. Stash them during the rebase and restore them afterwards.
           </label>
+        )}
+        {/* git's --autostash restores changes without their staged state. */}
+        {dirty && autostash && hasStaged && (
+          <div className="setting-hint">Staged changes come back unstaged; stage them again after the rebase.</div>
         )}
         {dirty && !autostash && <div className="dialog-error">Commit or stash your changes first, or let Grove stash them.</div>}
 

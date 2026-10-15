@@ -46,6 +46,9 @@ export default function DiffEditor({ path, original, modified, onStats, partialS
       // The toolbar toggle decides the layout, never the window width.
       useInlineViewWhenSpaceIsLimited: false,
       renderMarginRevertIcon: false,
+      // Grove has its own hunk actions; Monaco's gutter menu also throws
+      // "context key service disposed" when a diff editor is torn down.
+      renderGutterMenu: false,
       renderOverviewRuler: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
