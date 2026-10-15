@@ -91,4 +91,6 @@ src-tauri/           Rust backend
 7. ✅ History and merge conflicts
 8. ✅ Polish — settings, shortcuts, clone/init, Explorer integration, installers
 
-Not yet: code signing and auto-update (both need a signing key and a place to host releases).
+9. ✅ Power features — partial staging (hunks and lines), merge conflict editor, file history and blame, history search and compare, interactive rebase, multi-select and context menus in the file panel, credential prompts with progress and cancel, image diffs, remote branches, signature badges, submodules, worktrees, Git LFS, multiple windows
+
+Not yet: code signing and auto-update (both need a signing key and a place to host releases — see [docs/RELEASING.md](docs/RELEASING.md)).
