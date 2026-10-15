@@ -1,20 +1,46 @@
 // Credential prompts: also used by main.rs when Grove runs as askpass.
 pub mod askpass;
 mod commands;
+mod extras;
 mod git;
 mod menu;
 mod system;
 mod watcher;
+mod windows;
+
+use tauri::Manager;
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        // Only the main window's size and position are remembered; extra
+        // windows (grove-N) are transient.
+        .plugin(tauri_plugin_window_state::Builder::default().with_filter(|label| label == "main").build())
         .manage(watcher::RepoWatcher::default())
         .menu(menu::build)
         .on_menu_event(menu::on_event)
+        // Multiple windows: drop a closed window's file watcher.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                window.state::<watcher::RepoWatcher>().stop(window.label());
+            }
+        })
         .invoke_handler(tauri::generate_handler![
+            // Extras (extras.rs): images, remote branches, submodules, worktrees, LFS, windows.
+            extras::image_versions,
+            extras::delete_remote_branch,
+            extras::publish_branch,
+            extras::set_upstream,
+            extras::submodules,
+            extras::submodule_diff,
+            extras::update_submodule,
+            extras::worktrees,
+            extras::add_worktree,
+            extras::remove_worktree,
+            extras::lfs_info,
+            extras::lfs_pull,
+            extras::new_window,
             commands::launch_path,
             commands::open_repo,
             commands::close_repo,

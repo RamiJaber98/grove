@@ -39,7 +39,7 @@ export default function MoreMenu() {
           {MORE_MENU.map((section) => (
             <div key={section.title} className="dropdown-section">
               <div className="dropdown-title">{section.title}</div>
-              {section.ids.map((id) => (
+              {section.ids.filter((id) => COMMANDS[id].when?.() ?? true).map((id) => (
                 <button
                   key={id}
                   role="menuitem"

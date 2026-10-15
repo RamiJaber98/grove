@@ -9,6 +9,7 @@ import { openCompare } from "../store/compare";
 import HistorySearch, { EMPTY_FILTER, type Scope, type SearchFilter } from "./HistorySearch";
 import { Refresh } from "./Icons";
 import { openInteractiveRebase } from "../rebase";
+import { extraDiff, SignatureBadge, SubmoduleMark } from "./ExtraDiff";
 
 const DiffEditor = lazy(() => import("./DiffEditor"));
 
@@ -293,6 +294,18 @@ function CommitPane({ entry }: { entry: LogEntry }) {
   const c = { hash: entry.hash, short: entry.short, subject: entry.subject };
   const [subject, ...body] = (detail?.message ?? entry.subject).split("\n");
   const blocked = versions && [versions.original, versions.modified].some((s) => s.binary || s.tooLarge);
+  // Extras: images, submodules and LFS pointers get their own viewers.
+  const extra = file
+    ? extraDiff({
+        root: repo.root,
+        group: "commit",
+        path: file.path,
+        from: file.from,
+        rev: entry.hash,
+        submodule: !!detail?.submodules.includes(file.path),
+        versions,
+      })
+    : null;
 
   return (
     <div className="commit-pane">
@@ -308,6 +321,7 @@ function CommitPane({ entry }: { entry: LogEntry }) {
           <button className="link" title="Copy full hash" onClick={() => navigator.clipboard.writeText(entry.hash).then(() => useRepo.getState().toast("Copied commit hash."))}>
             {entry.short}
           </button>
+          <SignatureBadge signature={detail?.signature} />
           {entry.parents.length > 1 && <span className="muted">merge of {entry.parents.map((p) => p.slice(0, 7)).join(" + ")}</span>}
         </div>
         <div className="commit-actions">
@@ -352,6 +366,7 @@ function CommitPane({ entry }: { entry: LogEntry }) {
               onClick={() => setFile(f)}
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setFile(f)}
             >
+              {detail?.submodules.includes(f.path) && <SubmoduleMark />}
               <span className="file-name">{f.path.split("/").pop()}</span>
               <span className="file-dir">{f.path.split("/").slice(0, -1).join("/")}</span>
               <span className={`kind kind-${f.kind}`}>{f.kind}</span>
@@ -363,6 +378,8 @@ function CommitPane({ entry }: { entry: LogEntry }) {
       <div className="commit-diff">
         {!file ? (
           <div className="empty">{detail ? "Select a file." : "Loading…"}</div>
+        ) : extra ? (
+          extra
         ) : !versions ? (
           <div className="empty">Loading…</div>
         ) : blocked ? (

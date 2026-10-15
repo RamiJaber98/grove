@@ -5,6 +5,7 @@ import { useRepo, type DiffMode, type Group } from "../store/repo";
 import type { DiffStats } from "./DiffEditor";
 import { ArrowDown, ArrowUp } from "./Icons";
 import ConflictView from "./ConflictView";
+import { extraDiff } from "./ExtraDiff";
 
 // Monaco is several MB; load it the first time a diff is shown.
 const DiffEditor = lazy(() => import("./DiffEditor"));
@@ -49,6 +50,7 @@ function FileDiffView() {
   const statusVersion = useRepo((s) => s.statusVersion);
   const diffMode = useRepo((s) => s.diffMode);
   const setDiffMode = useRepo((s) => s.setDiffMode);
+  const submodules = useRepo((s) => s.submodules);
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [stats, setStats] = useState<DiffStats | null>(null);
@@ -81,9 +83,25 @@ function FileDiffView() {
     versions && !blocked && versions.original.exists && versions.modified.exists &&
     versions.original.text === versions.modified.text;
 
+  // Extras: images, submodules and LFS pointers get their own viewers.
+  const extra = selection
+    ? extraDiff({
+        root: repo.root,
+        group: selection.group,
+        path: selection.path,
+        from: selection.from,
+        rev: selection.stashRef,
+        submodule: selection.group !== "stash" && submodules.includes(selection.path),
+        versions,
+        version: statusVersion,
+      })
+    : null;
+
   let body;
   if (!selection) {
     body = <Empty>Select a file on the right to see its changes.</Empty>;
+  } else if (extra) {
+    body = extra;
   } else if (!current) {
     body = <Empty>Loading…</Empty>;
   } else if ("error" in current) {
@@ -142,7 +160,7 @@ function FileDiffView() {
             </button>
           </div>
         )}
-        {versions && !blocked && (
+        {versions && !blocked && !extra && (
           <div className="diff-nav">
             <button className="icon-btn" title="Previous change (Shift+F7)" onClick={() => runCommand("prev_change")} disabled={!stats?.hunks}>
               <ArrowUp size={14} />

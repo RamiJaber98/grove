@@ -42,6 +42,8 @@ interface State {
   changes: FileChange[];
   conflicts: FileChange[];
   operation: Status["operation"];
+  /** Extras: changed paths that are submodules. */
+  submodules: string[];
   stashes: StashEntry[];
 
   selection: Selection | null;
@@ -93,6 +95,7 @@ const EMPTY_STATUS = {
   changes: [],
   conflicts: [],
   operation: null,
+  submodules: [],
   stashes: [],
 };
 

@@ -22,6 +22,14 @@ pub mod status;
 // Credential prompts, progress & cancel: streaming runner for network ops.
 pub mod stream;
 
+// Extras: image diffs, remote branches, signatures, submodules, worktrees, LFS.
+pub mod image;
+pub mod lfs;
+pub mod remote_branch;
+pub mod signature;
+pub mod submodule;
+pub mod worktree;
+
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};

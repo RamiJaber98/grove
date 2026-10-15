@@ -1,28 +1,32 @@
-//! Watches the open repository and emits a debounced `repo-changed` event so
-//! the panel stays current when files are edited or git is used elsewhere.
+//! Watches each window's open repository and emits a debounced
+//! `repo-changed` event to that window only, so its panel stays current when
+//! files are edited or git is used elsewhere.
 
+use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
 use std::time::Duration;
 
 use notify_debouncer_mini::notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::{AppHandle, Emitter, EventTarget, Runtime};
 
+/// One watch per window label, since each window can have a repo open.
 #[derive(Default)]
-pub struct RepoWatcher(Mutex<Option<Debouncer<RecommendedWatcher>>>);
+pub struct RepoWatcher(Mutex<HashMap<String, Debouncer<RecommendedWatcher>>>);
 
 impl RepoWatcher {
-    /// Replaces any existing watch with one on `root`.
-    pub fn watch<R: Runtime>(&self, app: AppHandle<R>, root: PathBuf) -> Result<(), String> {
-        let mut slot = self.0.lock().unwrap();
-        *slot = None;
+    /// Replaces any existing watch for `window` with one on `root`.
+    pub fn watch<R: Runtime>(&self, app: AppHandle<R>, window: &str, root: PathBuf) -> Result<(), String> {
+        let mut map = self.0.lock().unwrap();
+        map.remove(window);
 
         let git_dir = root.join(".git");
+        let target = EventTarget::webview_window(window);
         let mut debouncer = new_debouncer(Duration::from_millis(300), move |res: DebounceEventResult| {
             if let Ok(events) = res {
                 if events.iter().any(|e| is_relevant(&git_dir, &e.path)) {
-                    let _ = app.emit("repo-changed", ());
+                    let _ = app.emit_to(target.clone(), "repo-changed", ());
                 }
             }
         })
@@ -32,12 +36,12 @@ impl RepoWatcher {
             .watch(&root, RecursiveMode::Recursive)
             .map_err(|e| e.to_string())?;
 
-        *slot = Some(debouncer);
+        map.insert(window.to_string(), debouncer);
         Ok(())
     }
 
-    pub fn stop(&self) {
-        *self.0.lock().unwrap() = None;
+    pub fn stop(&self, window: &str) {
+        self.0.lock().unwrap().remove(window);
     }
 }
 

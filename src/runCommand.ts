@@ -12,6 +12,7 @@ import { openBlame, openFileHistory, useFileView } from "./store/fileView";
 import { openInteractiveRebase } from "./rebase";
 import type { PatchOp } from "./api/git";
 import { partialStage, type Scope } from "./partialStage";
+import { runExtraCommand } from "./extrasActions";
 
 export async function pickAndOpenRepo() {
   const dir = await open({ directory: true, title: "Open Repository" });
@@ -41,6 +42,7 @@ export async function runCommand(id: string) {
 
   const s = useRepo.getState();
   if (REMOTE_OPS.has(id)) return actions.remote(id as RemoteOp);
+  if (runExtraCommand(id)) return;
   switch (id) {
     case "commit":
       return actions.commit();

@@ -576,3 +576,47 @@ button.status-item:focus-visible { outline: 2px solid var(--status-text); outlin
 .hunk-bar button:hover { background: var(--bg-hover); }
 .hunk-bar button.danger:hover { color: var(--danger); }
 .hunk-bar.busy button { opacity: .5; pointer-events: none; }
+
+/* Extras: image diffs, submodules, signature badge */
+.checker {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #d9dce1 25%, transparent 25%, transparent 75%, #d9dce1 75%),
+    linear-gradient(45deg, #d9dce1 25%, transparent 25%, transparent 75%, #d9dce1 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+.image-diff { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.image-toolbar {
+  flex: none; display: flex; align-items: center; gap: 12px; padding: 6px 12px;
+  border-bottom: 1px solid var(--border); background: var(--bg-panel);
+}
+.image-toolbar input[type="range"] { width: 200px; accent-color: var(--accent); }
+.segmented button:disabled { opacity: .45; cursor: default; }
+.image-panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; overflow: auto; }
+.image-pane { margin: 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.image-pane figcaption, .image-caption { font-size: 12px; color: var(--text-muted); }
+.image-pane figcaption strong, .image-caption strong { color: var(--text); font-weight: 600; }
+.image-frame {
+  flex: 1; min-height: 120px; display: grid; place-items: center; overflow: auto;
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.image-frame img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.image-missing { color: var(--text-muted); font-size: 13px; padding: 16px; text-align: center; }
+.image-overlay-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; overflow: auto; }
+/* Both images share one grid cell so they overlay at the same origin. */
+.image-overlay { position: relative; display: grid; max-width: 100%; border: 1px solid var(--border); }
+.image-overlay img { grid-area: 1 / 1; max-width: 100%; max-height: calc(100vh - 220px); object-fit: contain; user-select: none; }
+.image-divider { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); pointer-events: none; }
+.submodule-mark { flex: none; display: inline-flex; color: var(--text-muted); margin-right: 4px; }
+.submodule-diff { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.submodule-head { padding: 12px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); }
+.submodule-title { font-weight: 600; }
+.submodule-hashes code, .submodule-commit code { font-family: var(--mono); font-size: 12px; }
+.submodule-commits { padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.submodule-commit { font-size: 13px; padding: 2px 0; user-select: text; }
+.submodule-commit.removed { color: var(--text-muted); text-decoration: line-through; }
+.sig-badge { padding: 0 6px; border-radius: 4px; font-size: 11px; line-height: 18px; border: 1px solid currentColor; cursor: default; }
+.sig-badge.good { color: var(--accent); }
+.sig-badge.warn { color: var(--warn); }
+.sig-badge.bad { color: var(--danger); }

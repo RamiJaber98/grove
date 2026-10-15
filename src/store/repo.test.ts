@@ -16,6 +16,7 @@ function status(parts: Partial<Status> = {}): Status {
     changes: [],
     conflicts: [],
     operation: null,
+    submodules: [],
     ...parts,
   };
 }

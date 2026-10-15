@@ -1,3 +1,5 @@
+import { useExtras } from "./extrasActions";
+
 /**
  * Every user-facing command, keyed by the id used in the native menu
  * (src-tauri/src/menu.rs) and the ⋯ menu.
@@ -5,6 +7,8 @@
 export interface CommandInfo {
   label: string;
   danger?: boolean;
+  /** Extras: hides the ⋯ menu item unless this returns true. */
+  when?: () => boolean;
 }
 
 export const COMMANDS: Record<string, CommandInfo> = {
@@ -95,6 +99,14 @@ export const COMMANDS: Record<string, CommandInfo> = {
   // File history and blame (act on the file selected in the diff)
   file_history: { label: "File History" },
   blame_file: { label: "Blame" },
+  // Extras: windows, remote branches, worktrees, submodules, LFS (extrasActions.ts)
+  new_window: { label: "New Window" },
+  delete_remote_branch: { label: "Delete Remote Branch…", danger: true },
+  publish_branch: { label: "Publish Branch To…" },
+  set_upstream: { label: "Set Upstream…" },
+  worktrees: { label: "Worktrees…" },
+  submodules: { label: "Submodules…" },
+  lfs_fetch: { label: "Fetch LFS Objects", when: () => !!useExtras.getState().lfs?.used },
 
   // Help
   shortcuts: { label: "Keyboard Shortcuts" },
@@ -119,6 +131,9 @@ export const MORE_MENU: { title: string; ids: string[] }[] = [
   { title: "Tags", ids: ["add_tag", "delete_tag", "push_tags"] },
   { title: "Remote", ids: ["add_remote", "remove_remote"] },
   { title: "Reset & History", ids: ["cherry_pick", "revert_commit", "reset_soft", "reset_mixed", "reset_hard"] },
+  // Extras
+  { title: "Remote Branches", ids: ["publish_branch", "set_upstream", "delete_remote_branch"] },
+  { title: "Repository", ids: ["worktrees", "submodules", "lfs_fetch", "new_window"] },
 ];
 
 // Interactive rebase: listed right after "Rebase Current Onto…".

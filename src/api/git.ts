@@ -26,6 +26,8 @@ export interface Status {
   conflicts: FileChange[];
   /** In-progress multi-step operation, if any. */
   operation: "merge" | "rebase" | "cherry-pick" | "revert" | null;
+  /** Extras: changed paths that are submodules. */
+  submodules: string[];
 }
 
 export interface Branch {
@@ -79,6 +81,9 @@ export interface CommitDetail {
   commitTime: number;
   message: string;
   files: FileChange[];
+  /** Extras: signature status and submodule paths among `files`. */
+  signature: import("./extras").Signature;
+  submodules: string[];
 }
 
 export interface Identity {

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, State, WebviewWindow};
 
 use crate::git::diff::FileVersions;
 use crate::git::log::{CommitDetail, LogEntry};
@@ -17,7 +17,7 @@ use crate::git::stream::{Op, Progress};
 use tauri::Emitter;
 
 /// Git calls block; run them off the main thread.
-async fn blocking<T: Send + 'static>(f: impl FnOnce() -> GitResult<T> + Send + 'static) -> GitResult<T> {
+pub(crate) async fn blocking<T: Send + 'static>(f: impl FnOnce() -> GitResult<T> + Send + 'static) -> GitResult<T> {
     tauri::async_runtime::spawn_blocking(f)
         .await
         .unwrap_or_else(|e| Err(GitError::new(e.to_string())))
@@ -37,20 +37,26 @@ pub fn launch_path() -> Option<String> {
     Some(path.to_string_lossy().into_owned())
 }
 
-/// Resolves `path` to its repository and starts watching it.
+/// Resolves `path` to its repository and starts watching it for the
+/// calling window (each window has its own repo and watch).
 #[tauri::command]
-pub async fn open_repo(app: AppHandle, watcher: State<'_, RepoWatcher>, path: String) -> GitResult<RepoInfo> {
+pub async fn open_repo(
+    app: AppHandle,
+    window: WebviewWindow,
+    watcher: State<'_, RepoWatcher>,
+    path: String,
+) -> GitResult<RepoInfo> {
     let info = blocking(move || git::repo_info(Path::new(&path))).await?;
     // The panel still works without live updates (F5 / window focus refresh).
-    if let Err(e) = watcher.watch(app, PathBuf::from(&info.root)) {
+    if let Err(e) = watcher.watch(app, window.label(), PathBuf::from(&info.root)) {
         eprintln!("file watcher unavailable: {e}");
     }
     Ok(info)
 }
 
 #[tauri::command]
-pub fn close_repo(watcher: State<'_, RepoWatcher>) {
-    watcher.stop();
+pub fn close_repo(window: WebviewWindow, watcher: State<'_, RepoWatcher>) {
+    watcher.stop(window.label());
 }
 
 #[tauri::command]

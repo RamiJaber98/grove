@@ -22,6 +22,7 @@ import ContextMenu, { openContextMenu, type MenuItem } from "./ContextMenu";
 import { ArrowDown, ArrowUp, Check, Chevron, Discard, Minus, Plus, Spinner, Trash } from "./Icons";
 import MoreMenu from "./MoreMenu";
 import { markResolved } from "../conflictActions";
+import { SubmoduleMark } from "./ExtraDiff";
 
 interface Action {
   title: string;
@@ -470,6 +471,7 @@ function FileGroup({
     if (!isSelected(key, f.path)) selectOnly(key, f.path);
     showMenu(e, () => fileMenu(group, targetsFor(key, f)));
   }
+  const submodules = useRepo((s) => s.submodules);
 
   return (
     <Section
@@ -504,6 +506,7 @@ function FileGroup({
             onClick={(e) => onClick(e, f)}
             onContextMenu={(e) => onContextMenu(e, f)}
           >
+            {group !== "stash" && submodules.includes(f.path) && <SubmoduleMark />}
             <span className="file-name">{name}</span>
             <span className="file-dir">{dir}</span>
             {fileActions && <Actions actions={fileActions(f)} />}
