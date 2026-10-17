@@ -55,7 +55,11 @@ fn remove_partial_clone(dest: &Path) {
 /// Runs `git init` in `path` (creating the folder if needed).
 pub fn init(path: &Path) -> GitResult<()> {
     std::fs::create_dir_all(path).map_err(|e| GitError::new(format!("could not create {}: {e}", path.display())))?;
-    if run(path, &["rev-parse", "--show-toplevel"]).is_ok_and(|top| Path::new(top.trim()) == path) {
+    // A repository root has its own .git (a folder, or a file for worktrees
+    // and submodules). Comparing with `rev-parse --show-toplevel` instead is
+    // unreliable: git reports canonical paths (macOS /private/var, Windows
+    // long names) that needn't match the path we were given.
+    if path.join(".git").exists() {
         return Err(GitError::new("That folder is already a git repository."));
     }
     run(path, &["init"]).map(drop)
