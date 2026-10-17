@@ -67,10 +67,9 @@ pub fn request(port: u16, token: &str, prompt: &str) -> std::io::Result<Option<S
 
     let mut reply = Vec::new();
     stream.take(MAX_REQUEST).read_to_end(&mut reply)?;
-    let parsed = match reply.strip_prefix(b"OK\n") {
-        Some(answer) => Some(String::from_utf8_lossy(answer).into_owned()),
-        None => None,
-    };
+    let parsed = reply
+        .strip_prefix(b"OK\n")
+        .map(|answer| String::from_utf8_lossy(answer).into_owned());
     reply.fill(0);
     Ok(parsed)
 }

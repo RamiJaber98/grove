@@ -175,7 +175,7 @@ pub(super) mod tests {
 
     #[test]
     fn numstat_parsing() {
-        let m = parse_numstat("3\t1\ta.txt\0-\t-\tbin.dat\0002\t0\t\0old.txt\0new.txt\0");
+        let m = parse_numstat("3\t1\ta.txt\0-\t-\tbin.dat\x002\t0\t\0old.txt\0new.txt\0");
         assert_eq!(m["a.txt"], (Some(3), Some(1)));
         assert_eq!(m["bin.dat"], (None, None));
         assert_eq!(m["new.txt"], (Some(2), Some(0)));
