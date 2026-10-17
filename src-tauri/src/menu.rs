@@ -45,7 +45,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         menu.append(&app_menu)?;
     }
 
-    let mut file = SubmenuBuilder::new(app, "File")
+    let file = SubmenuBuilder::new(app, "File")
         .item(&item(app, "open_repo", "Open Repository…", Some("CmdOrCtrl+O"))?)
         .item(&item(app, "clone_repo", "Clone Repository…", None)?)
         .item(&item(app, "init_repo", "Initialize Repository…", None)?)
@@ -56,14 +56,13 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(app, "open_terminal", "Open Terminal Here", None)?)
         .separator()
         .item(&item(app, "close_repo", "Close Repository", Some("CmdOrCtrl+W"))?);
+    // Elsewhere Settings and Exit live in File; on macOS, in the app menu.
     #[cfg(not(target_os = "macos"))]
-    {
-        file = file
-            .separator()
-            .item(&item(app, "settings", "Settings…", Some("CmdOrCtrl+,"))?)
-            .separator()
-            .item(&tauri::menu::PredefinedMenuItem::quit(app, Some("Exit"))?);
-    }
+    let file = file
+        .separator()
+        .item(&item(app, "settings", "Settings…", Some("CmdOrCtrl+,"))?)
+        .separator()
+        .item(&tauri::menu::PredefinedMenuItem::quit(app, Some("Exit"))?);
     menu.append(&file.build()?)?;
 
     let edit = SubmenuBuilder::new(app, "Edit")
@@ -139,12 +138,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .build()?;
     menu.append(&branch)?;
 
-    let mut help = SubmenuBuilder::new(app, "Help")
+    let help = SubmenuBuilder::new(app, "Help")
         .item(&item(app, "shortcuts", "Keyboard Shortcuts", Some("CmdOrCtrl+/"))?);
     #[cfg(not(target_os = "macos"))]
-    {
-        help = help.separator().item(&item(app, "about", "About Grove", None)?);
-    }
+    let help = help.separator().item(&item(app, "about", "About Grove", None)?);
     menu.append(&help.build()?)?;
 
     Ok(menu)
