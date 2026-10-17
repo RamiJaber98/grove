@@ -3,6 +3,8 @@ name = "grove"
 version = "0.1.0"
 description = "A lightweight git GUI"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/RamiJaber98/grove"
 
 [lib]
 name = "grove_lib"
