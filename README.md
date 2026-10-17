@@ -4,6 +4,17 @@ A lightweight desktop git GUI for Windows and macOS. Open it in any repository t
 
 Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. All git operations shell out to your installed `git`, so credentials, hooks and config behave exactly as in the terminal.
 
+## Download
+
+| Windows | macOS |
+| --- | --- |
+| [**Download Grove for Windows**](https://github.com/RamiJaber98/grove/releases/latest/download/Grove_x64-setup.exe) | [**Download Grove for macOS**](https://github.com/RamiJaber98/grove/releases/latest/download/Grove_universal.dmg) |
+| Windows 10 or 11, 64-bit | macOS 11 or later, Apple Silicon or Intel |
+
+Grove needs [git](https://git-scm.com/downloads) installed. Older versions are on the [releases page](https://github.com/RamiJaber98/grove/releases).
+
+> The installers aren't code-signed yet. On Windows, if SmartScreen says "Windows protected your PC", click **More info → Run anyway**. On macOS, right-click Grove in Applications and choose **Open** the first time.
+
 ## Using Grove
 
 - **Open a repository:** File › Open Repository, the recent list on the start screen, or from a terminal:

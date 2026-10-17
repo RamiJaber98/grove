@@ -51,3 +51,18 @@ jobs:
           releaseBody: See the assets below to download and install Grove.
           releaseDraft: true
           args: ${{ matrix.args }}
+
+      # Also attach copies without the version in the name, so the README can
+      # link to releases/latest/download/<name> and never go stale.
+      - name: Upload stable-named installers
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p stable
+          if [ "${{ matrix.platform }}" = "windows-latest" ]; then
+            cp src-tauri/target/release/bundle/nsis/*-setup.exe stable/Grove_x64-setup.exe
+          else
+            cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg stable/Grove_universal.dmg
+          fi
+          gh release upload "${{ github.ref_name }}" stable/* --clobber
