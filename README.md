@@ -4,6 +4,10 @@ A lightweight desktop git GUI for Windows and macOS. Open it in any repository t
 
 Built with [Tauri 2](https://tauri.app) (Rust) and React + TypeScript. All git operations shell out to your installed `git`, so credentials, hooks and config behave exactly as in the terminal.
 
+![Grove showing a side-by-side diff with hunk staging, and the source control panel with staged, changed and stashed files](docs/screenshots/changes.png)
+
+![Grove's history view with a branch graph, commit details and the commit's diff](docs/screenshots/history.png)
+
 ## Download
 
 | Windows | macOS |
