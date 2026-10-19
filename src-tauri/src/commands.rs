@@ -46,9 +46,17 @@ pub async fn open_repo(
     watcher: State<'_, RepoWatcher>,
     path: String,
 ) -> GitResult<RepoInfo> {
-    let info = blocking(move || git::repo_info(Path::new(&path))).await?;
+    let (info, dirs) = blocking(move || {
+        let info = git::repo_info(Path::new(&path))?;
+        let dirs = git::git_dirs(Path::new(&info.root));
+        Ok((info, dirs))
+    })
+    .await?;
     // The panel still works without live updates (F5 / window focus refresh).
-    if let Err(e) = watcher.watch(app, window.label(), PathBuf::from(&info.root)) {
+    let watched = dirs
+        .map_err(|e| e.message)
+        .and_then(|(own, common)| watcher.watch(app, window.label(), PathBuf::from(&info.root), own, common));
+    if let Err(e) = watched {
         eprintln!("file watcher unavailable: {e}");
     }
     Ok(info)

@@ -197,3 +197,14 @@ pub fn repo_info(path: &Path) -> GitResult<RepoInfo> {
     let name = root.rsplit('/').next().unwrap_or(&root).to_string();
     Ok(RepoInfo { root, name })
 }
+
+/// This worktree's git directory and the one all worktrees share, as
+/// absolute paths. They differ only in a linked worktree.
+pub fn git_dirs(root: &Path) -> GitResult<(PathBuf, PathBuf)> {
+    let out = run(root, &["rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir"])?;
+    let mut lines = out.lines().map(|l| PathBuf::from(l.trim()));
+    match (lines.next(), lines.next()) {
+        (Some(own), Some(common)) => Ok((own, common)),
+        _ => Err(GitError::new("could not locate the git directory")),
+    }
+}
