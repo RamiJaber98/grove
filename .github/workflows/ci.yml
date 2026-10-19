@@ -55,7 +55,7 @@ jobs:
 
       - run: npm test
 
-      # Not yet enforced with -D warnings: run to surface lints without failing the build.
+      # Any lint fails the build.
       - name: Clippy
         working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
