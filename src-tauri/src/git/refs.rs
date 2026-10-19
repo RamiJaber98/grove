@@ -7,7 +7,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use super::{run, GitError, GitResult};
+use super::{run, run_env, GitError, GitResult};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -192,7 +192,8 @@ pub fn operation(root: &Path, kind: &str, action: OperationAction) -> GitResult<
     };
     // `--continue` may want an editor for the commit message; accept git's
     // prepared message instead of hanging on an editor nobody can see.
-    run(root, &["-c", "core.editor=true", cmd, action]).map(drop)
+    // GIT_EDITOR, not core.editor: an inherited GIT_EDITOR would win over config.
+    run_env(root, &[cmd, action], &[("GIT_EDITOR", "true")]).map(drop)
 }
 
 pub fn tags(root: &Path) -> GitResult<Vec<Tag>> {
@@ -224,9 +225,9 @@ pub fn delete_tag(root: &Path, name: &str) -> GitResult<()> {
 pub fn remotes(root: &Path) -> GitResult<Vec<Remote>> {
     let out = run(root, &["remote", "-v"])?;
     let mut remotes: Vec<Remote> = Vec::new();
-    for line in out.lines().filter(|l| l.ends_with("(fetch)")) {
-        let mut parts = line.split_whitespace();
-        if let (Some(name), Some(url)) = (parts.next(), parts.next()) {
+    // "<name>\t<url> (fetch)"; the URL itself may contain spaces (local paths).
+    for line in out.lines() {
+        if let Some((name, url)) = line.strip_suffix(" (fetch)").and_then(|l| l.split_once('\t')) {
             remotes.push(Remote { name: name.to_string(), url: url.to_string() });
         }
     }
@@ -346,6 +347,14 @@ mod tests {
         let s = status(root).unwrap();
         assert_eq!(s.operation, None);
         assert!(s.conflicts.is_empty());
+
+        // Continue commits with git's prepared message, no editor.
+        assert!(merge(root, "other").is_err());
+        std::fs::write(root.join("a.txt"), "resolved").unwrap();
+        run(root, &["add", "a.txt"]).unwrap();
+        operation(root, "merge", OperationAction::Continue).unwrap();
+        assert_eq!(status(root).unwrap().operation, None);
+        assert!(run(root, &["log", "-1", "--format=%s"]).unwrap().starts_with("Merge branch 'other'"));
     }
 
     #[test]
@@ -368,6 +377,9 @@ mod tests {
         assert_eq!(remotes(root).unwrap()[0].url, "https://example.com/repo.git");
         remove_remote(root, "origin").unwrap();
         assert!(remotes(root).unwrap().is_empty());
+        add_remote(root, "local", "C:/My Repos/x.git").unwrap();
+        assert_eq!(remotes(root).unwrap()[0].url, "C:/My Repos/x.git");
+        remove_remote(root, "local").unwrap();
 
         let commits = recent_commits(root, 10).unwrap();
         assert_eq!(commits.len(), 2);
