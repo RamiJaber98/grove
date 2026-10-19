@@ -176,7 +176,7 @@ mod tests {
         let seen = progressed.clone();
         let flag = Arc::new(OnceLock::<Arc<AtomicBool>>::new());
         let flag2 = flag.clone();
-        let net = Op::new(move |_| {
+        let net = Op::new("", move |_| {
             // Cancel as soon as git reports anything, i.e. mid-transfer.
             seen.store(true, Ordering::SeqCst);
             flag2.get().unwrap().store(true, Ordering::SeqCst);

@@ -5,6 +5,7 @@ use std::path::Path;
 
 use super::refs::{check_branch_name, plain_arg};
 use super::status::status;
+use super::stream::Op;
 use super::{run, GitError, GitResult};
 
 fn remote_names(root: &Path) -> GitResult<Vec<String>> {
@@ -37,9 +38,9 @@ fn split_remote_branch(root: &Path, name: &str) -> GitResult<(String, String)> {
 /// `git push <remote> --delete <branch>`, then drops the remote-tracking
 /// ref. If the branch was already gone on the remote, only the stale
 /// tracking ref is removed.
-pub fn delete_remote_branch(root: &Path, name: &str) -> GitResult<String> {
+pub fn delete_remote_branch(root: &Path, name: &str, net: &Op) -> GitResult<String> {
     let (remote, branch) = split_remote_branch(root, name)?;
-    let pushed = run(root, &["push", &remote, "--delete", &branch]);
+    let pushed = net.run(root, &["push", &remote, "--delete", &branch]);
     // Push usually removes the tracking ref itself; this covers the rest.
     let _ = run(root, &["branch", "-r", "-d", &format!("{remote}/{branch}")]);
     match pushed {
@@ -52,14 +53,14 @@ pub fn delete_remote_branch(root: &Path, name: &str) -> GitResult<String> {
 }
 
 /// Pushes the current branch to `remote` and tracks it there.
-pub fn publish_branch(root: &Path, remote: &str) -> GitResult<String> {
+pub fn publish_branch(root: &Path, remote: &str, net: &Op) -> GitResult<String> {
     let remote = check_remote(root, remote)?;
     let s = status(root)?;
     let branch = s.branch.ok_or_else(|| GitError::new("HEAD is detached. Check out a branch to publish."))?;
     if !s.has_commits {
         return Err(GitError::new("There's nothing to push yet. Make a commit first."));
     }
-    run(root, &["push", "-u", &remote, &branch])?;
+    net.run(root, &["push", "-u", &remote, &branch])?;
     Ok(format!("Published {branch} to {remote}/{branch}."))
 }
 
@@ -112,9 +113,9 @@ mod tests {
         run(&work, &["remote", "add", "backup", backup.to_str().unwrap()]).unwrap();
         run(&work, &["commit", "--allow-empty", "-qm", "one"]).unwrap();
 
-        assert!(publish_branch(&work, "nowhere").is_err());
-        assert!(publish_branch(&work, "--all").is_err());
-        assert_eq!(publish_branch(&work, "backup").unwrap(), "Published main to backup/main.");
+        assert!(publish_branch(&work, "nowhere", &Op::silent()).is_err());
+        assert!(publish_branch(&work, "--all", &Op::silent()).is_err());
+        assert_eq!(publish_branch(&work, "backup", &Op::silent()).unwrap(), "Published main to backup/main.");
         assert_eq!(status(&work).unwrap().upstream.as_deref(), Some("backup/main"));
 
         run(&work, &["push", "-q", "origin", "main", "main:feature/x"]).unwrap();
@@ -123,17 +124,17 @@ mod tests {
         assert!(set_upstream(&work, "origin/missing").is_err());
         assert!(set_upstream(&work, "nowhere/main").is_err());
 
-        assert!(delete_remote_branch(&work, "origin").is_err());
-        assert!(delete_remote_branch(&work, "-origin/x").is_err());
+        assert!(delete_remote_branch(&work, "origin", &Op::silent()).is_err());
+        assert!(delete_remote_branch(&work, "-origin/x", &Op::silent()).is_err());
         assert!(remote_branches(&work).contains(&"origin/feature/x".to_string()));
-        assert_eq!(delete_remote_branch(&work, "origin/feature/x").unwrap(), "Deleted feature/x on origin.");
+        assert_eq!(delete_remote_branch(&work, "origin/feature/x", &Op::silent()).unwrap(), "Deleted feature/x on origin.");
         assert!(!remote_branches(&work).contains(&"origin/feature/x".to_string()));
         assert!(run(&origin, &["rev-parse", "--verify", "-q", "refs/heads/feature/x"]).is_err());
 
         // Deleted elsewhere: the stale tracking ref still gets cleaned up.
         run(&work, &["push", "-q", "origin", "main:gone"]).unwrap();
         run(&origin, &["branch", "-D", "gone"]).unwrap();
-        assert!(delete_remote_branch(&work, "origin/gone").unwrap().contains("already gone"));
+        assert!(delete_remote_branch(&work, "origin/gone", &Op::silent()).unwrap().contains("already gone"));
         assert!(!remote_branches(&work).contains(&"origin/gone".to_string()));
     }
 }

@@ -14,6 +14,7 @@ import Panels from "./components/Panels";
 import AskpassDialog from "./components/AskpassDialog";
 import { FloatingProgress } from "./components/Progress";
 import { installProgressListeners } from "./progress";
+import { listenHere } from "./windowEvents";
 import RebaseEditor from "./components/RebaseEditor";
 
 declare global {
@@ -22,13 +23,6 @@ declare global {
     __GROVE_OPEN__?: string | null;
   }
 }
-
-/**
- * Listens only to events addressed to this window. A plain `listen()` would
- * also receive events meant for other Grove windows.
- */
-const listenHere = <T,>(event: string, handler: (e: { payload: T }) => void) =>
-  getCurrentWebviewWindow().listen<T>(event, handler);
 
 export default function App() {
   const repo = useRepo((s) => s.repo);

@@ -5,6 +5,7 @@ use std::path::Path;
 
 use serde::Serialize;
 
+use super::stream::Op;
 use super::{repo_path, run, GitError, GitResult};
 
 /// Commits listed between the old and new pointer, at most.
@@ -142,9 +143,10 @@ fn commits_between(dir: &Path, from: &str, to: &str) -> GitResult<Vec<SubCommit>
 
 /// Checks the submodule out at the commit the superproject records,
 /// initialising (and recursing into) it if needed.
-pub fn update(root: &Path, path: &str) -> GitResult<()> {
+pub fn update(root: &Path, path: &str, net: &Op) -> GitResult<()> {
     repo_path(root, path)?;
-    run(root, &["submodule", "update", "--init", "--recursive", "--", path]).map(drop)
+    // Fetches when the recorded commit is missing, so it runs like a network op.
+    net.run_plain(root, &["submodule", "update", "--init", "--recursive", "--progress", "--", path]).map(drop)
 }
 
 /// Paths of submodules (gitlinks, mode 160000) changed between two commits;
@@ -239,8 +241,8 @@ mod tests {
         let d = diff(&app, "changes", "deps/lib", None).unwrap();
         assert!(d.rewind);
         assert_eq!(d.commits.len(), 2);
-        update(&app, "deps/lib").unwrap();
+        update(&app, "deps/lib", &Op::silent()).unwrap();
         assert!(crate::git::status::status(&app).unwrap().submodules.is_empty());
-        assert!(update(&app, "../x").is_err());
+        assert!(update(&app, "../x", &Op::silent()).is_err());
     }
 }

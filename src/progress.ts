@@ -3,8 +3,8 @@
  * backend events. Non-null only while a cancellable operation is running.
  */
 import { create } from "zustand";
-import { listen } from "@tauri-apps/api/event";
 import { isTauri, type GitProgress } from "./api/git";
+import { listenHere } from "./windowEvents";
 
 export const useProgress = create<{ progress: GitProgress | null }>(() => ({ progress: null }));
 
@@ -12,8 +12,8 @@ export const useProgress = create<{ progress: GitProgress | null }>(() => ({ pro
 export function installProgressListeners(): () => void {
   if (!isTauri) return () => {};
   const subs = [
-    listen<GitProgress>("git-progress", (e) => useProgress.setState({ progress: e.payload })),
-    listen("git-progress-end", () => useProgress.setState({ progress: null })),
+    listenHere<GitProgress>("git-progress", (e) => useProgress.setState({ progress: e.payload })),
+    listenHere("git-progress-end", () => useProgress.setState({ progress: null })),
   ];
   return () => subs.forEach((s) => s.then((f) => f()));
 }

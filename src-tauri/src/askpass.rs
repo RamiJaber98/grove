@@ -7,10 +7,12 @@
 //! running app, which shows a modal and sends back the answer.
 //!
 //! Wire format, one connection per prompt:
-//!   client -> server: `<token>\n<prompt text>` then shuts down its write half
+//!   client -> server: `<token>\n<window>\n<prompt text>` then shuts down its write half
 //!   server -> client: `OK\n<answer>` or `CANCEL\n`
 //! The token is a per-session random secret passed only through the env of
 //! the git child, so other local users/processes can't drive the prompt.
+//! `<window>` is the label of the Grove window whose operation is asking, so
+//! the prompt shows there and nowhere else.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -23,6 +25,7 @@ use serde::Serialize;
 
 const PORT_VAR: &str = "GROVE_ASKPASS_PORT";
 const TOKEN_VAR: &str = "GROVE_ASKPASS_TOKEN";
+const WINDOW_VAR: &str = "GROVE_ASKPASS_WINDOW";
 
 /// How long the user has to answer before git is told the prompt failed.
 const PROMPT_TIMEOUT: Duration = Duration::from_secs(5 * 60);
@@ -36,9 +39,10 @@ const MAX_REQUEST: u64 = 64 * 1024;
 pub fn client_main() -> Option<i32> {
     let port: u16 = std::env::var(PORT_VAR).ok()?.parse().ok()?;
     let token = std::env::var(TOKEN_VAR).ok()?;
+    let window = std::env::var(WINDOW_VAR).unwrap_or_default();
     // git and ssh pass the prompt as the only argument.
     let prompt = std::env::args().nth(1).unwrap_or_default();
-    Some(match request(port, &token, &prompt) {
+    Some(match request(port, &token, &window, &prompt) {
         Ok(Some(mut answer)) => {
             let mut out = std::io::stdout().lock();
             let ok = writeln!(out, "{answer}").and_then(|_| out.flush()).is_ok();
@@ -58,11 +62,11 @@ pub fn client_main() -> Option<i32> {
 }
 
 /// Sends one prompt to the server and waits for the answer (None = cancelled).
-pub fn request(port: u16, token: &str, prompt: &str) -> std::io::Result<Option<String>> {
+pub fn request(port: u16, token: &str, window: &str, prompt: &str) -> std::io::Result<Option<String>> {
     let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, port))?;
     // A little longer than the server's own timeout, so the server decides.
     stream.set_read_timeout(Some(PROMPT_TIMEOUT + Duration::from_secs(30)))?;
-    stream.write_all(format!("{token}\n{prompt}").as_bytes())?;
+    stream.write_all(format!("{token}\n{window}\n{prompt}").as_bytes())?;
     stream.shutdown(std::net::Shutdown::Write)?;
 
     let mut reply = Vec::new();
@@ -83,14 +87,21 @@ pub struct Prompt {
     pub id: u64,
     pub prompt: String,
     pub secret: bool,
+    /// Label of the window to show it in.
+    #[serde(skip)]
+    pub window: String,
 }
 
 type Answer = Option<String>;
 
 struct Pending {
     next_id: u64,
-    waiting: HashMap<u64, Sender<Answer>>,
+    /// Open prompts: where to send the answer, and the window showing it.
+    waiting: HashMap<u64, (Sender<Answer>, String)>,
 }
+
+/// Dismisses prompt `id` in `window`.
+type OnClose = Box<dyn Fn(u64, &str) + Send + Sync>;
 
 /// A running listener. `on_prompt` shows a prompt; `on_close` dismisses one
 /// that timed out or was cancelled from the backend.
@@ -101,14 +112,14 @@ pub struct Server {
     /// Held for the whole life of a prompt so only one is shown at a time.
     one_at_a_time: Mutex<()>,
     on_prompt: Box<dyn Fn(&Prompt) + Send + Sync>,
-    on_close: Box<dyn Fn(u64) + Send + Sync>,
+    on_close: OnClose,
 }
 
 impl Server {
     /// Binds a random loopback port and starts accepting on a thread.
     pub fn start(
         on_prompt: impl Fn(&Prompt) + Send + Sync + 'static,
-        on_close: impl Fn(u64) + Send + Sync + 'static,
+        on_close: impl Fn(u64, &str) + Send + Sync + 'static,
     ) -> std::io::Result<Arc<Server>> {
         let listener = TcpListener::bind(SocketAddr::from((Ipv4Addr::LOCALHOST, 0)))?;
         let server = Arc::new(Server {
@@ -146,12 +157,13 @@ impl Server {
             return;
         }
         let text = String::from_utf8_lossy(&raw).into_owned();
-        let Some((token, prompt)) = text.split_once('\n') else { return };
+        let Some((token, rest)) = text.split_once('\n') else { return };
         if !constant_time_eq(token.as_bytes(), self.token.as_bytes()) {
             return;
         }
+        let Some((window, prompt)) = rest.split_once('\n') else { return };
 
-        let mut answer = self.ask(prompt);
+        let mut answer = self.ask(window, prompt);
         let reply = match &answer {
             Some(a) => {
                 let mut bytes = Vec::with_capacity(a.len() + 3);
@@ -170,22 +182,22 @@ impl Server {
     }
 
     /// Shows `prompt` and blocks until it is answered, cancelled or times out.
-    fn ask(&self, prompt: &str) -> Answer {
+    fn ask(&self, window: &str, prompt: &str) -> Answer {
         let _turn = self.one_at_a_time.lock().unwrap_or_else(|e| e.into_inner());
         let (tx, rx) = mpsc::channel();
         let id = {
             let mut p = self.pending.lock().unwrap_or_else(|e| e.into_inner());
             let id = p.next_id;
             p.next_id += 1;
-            p.waiting.insert(id, tx);
+            p.waiting.insert(id, (tx, window.to_string()));
             id
         };
-        (self.on_prompt)(&Prompt { id, prompt: prompt.to_string(), secret: is_secret(prompt) });
+        (self.on_prompt)(&Prompt { id, prompt: prompt.to_string(), secret: is_secret(prompt), window: window.to_string() });
         let answer = rx.recv_timeout(PROMPT_TIMEOUT).ok().flatten();
         // Still registered means nobody answered: close the dialog.
         let unanswered = self.pending.lock().unwrap_or_else(|e| e.into_inner()).waiting.remove(&id).is_some();
         if unanswered {
-            (self.on_close)(id);
+            (self.on_close)(id, window);
         }
         answer
     }
@@ -193,22 +205,30 @@ impl Server {
     /// Delivers the user's answer (None = cancelled) for prompt `id`.
     pub fn answer(&self, id: u64, answer: Answer) {
         let tx = self.pending.lock().unwrap_or_else(|e| e.into_inner()).waiting.remove(&id);
-        if let Some(tx) = tx {
+        if let Some((tx, _)) = tx {
             let _ = tx.send(answer);
         }
     }
 
-    /// Cancels every open prompt (the git operation itself was cancelled).
-    pub fn cancel_all(&self) {
-        let ids: Vec<u64> = self.pending.lock().unwrap_or_else(|e| e.into_inner()).waiting.keys().copied().collect();
+    /// Cancels the open prompts of `window` (its git operation was cancelled).
+    pub fn cancel_window(&self, window: &str) {
+        let ids: Vec<u64> = self
+            .pending
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .waiting
+            .iter()
+            .filter(|(_, (_, w))| w == window)
+            .map(|(id, _)| *id)
+            .collect();
         for id in ids {
             self.answer(id, None);
-            (self.on_close)(id);
+            (self.on_close)(id, window);
         }
     }
 
-    /// Env vars that make git and ssh ask Grove for credentials.
-    pub fn env(&self, exe: &str) -> Vec<(&'static str, String)> {
+    /// Env vars that make git and ssh ask Grove for credentials, in `window`.
+    pub fn env(&self, exe: &str, window: &str) -> Vec<(&'static str, String)> {
         vec![
             ("GIT_ASKPASS", exe.to_string()),
             ("SSH_ASKPASS", exe.to_string()),
@@ -216,6 +236,7 @@ impl Server {
             ("SSH_ASKPASS_REQUIRE", "force".to_string()),
             (PORT_VAR, self.port.to_string()),
             (TOKEN_VAR, self.token.clone()),
+            (WINDOW_VAR, window.to_string()),
         ]
     }
 }
@@ -227,7 +248,7 @@ static SERVER: OnceLock<Arc<Server>> = OnceLock::new();
 /// available, so git falls back to failing with its own message.
 pub fn ensure_started(
     on_prompt: impl Fn(&Prompt) + Send + Sync + 'static,
-    on_close: impl Fn(u64) + Send + Sync + 'static,
+    on_close: impl Fn(u64, &str) + Send + Sync + 'static,
 ) {
     if SERVER.get().is_some() {
         return;
@@ -244,11 +265,12 @@ pub fn global() -> Option<&'static Arc<Server>> {
     SERVER.get()
 }
 
-/// Adds askpass env vars to a git command, if the server is running.
-pub fn configure(cmd: &mut std::process::Command) {
+/// Adds askpass env vars to a git command, if the server is running, so its
+/// prompts show in `window`.
+pub fn configure(cmd: &mut std::process::Command, window: &str) {
     let Some(server) = global() else { return };
     let Some(exe) = exe_path() else { return };
-    for (k, v) in server.env(&exe) {
+    for (k, v) in server.env(&exe, window) {
         cmd.env(k, v);
     }
     // Some ssh builds ignore SSH_ASKPASS unless DISPLAY is set.
@@ -305,7 +327,7 @@ mod tests {
                 // Answer from another thread, like the real UI does.
                 std::thread::spawn(move || slot.get().unwrap().answer(id, answer));
             },
-            |_| {},
+            |_, _| {},
         )
         .unwrap();
         slot.set(server.clone()).ok().unwrap();
@@ -315,15 +337,15 @@ mod tests {
     #[test]
     fn round_trip() {
         let s = server(|p| (p == "Password for 'https://x@host': ").then(|| "s3cr3t pw".to_string()));
-        assert_eq!(request(s.port(), s.token(), "Password for 'https://x@host': ").unwrap().as_deref(), Some("s3cr3t pw"));
-        assert_eq!(request(s.port(), s.token(), "Username for 'https://host': ").unwrap(), None, "cancelled");
+        assert_eq!(request(s.port(), s.token(), "main", "Password for 'https://x@host': ").unwrap().as_deref(), Some("s3cr3t pw"));
+        assert_eq!(request(s.port(), s.token(), "main", "Username for 'https://host': ").unwrap(), None, "cancelled");
     }
 
     #[test]
     fn multi_line_prompt_and_unicode() {
         let s = server(|p| Some(format!("{}|ü", p.lines().count())));
         let prompt = "The authenticity of host 'h' can't be established.\nAre you sure (yes/no)? ";
-        assert_eq!(request(s.port(), s.token(), prompt).unwrap().as_deref(), Some("2|ü"));
+        assert_eq!(request(s.port(), s.token(), "main", prompt).unwrap().as_deref(), Some("2|ü"));
     }
 
     #[test]
@@ -331,23 +353,47 @@ mod tests {
         let s = server(|_| Some("leak".into()));
         let mut bad = s.token().to_string();
         bad.replace_range(0..1, if bad.starts_with('0') { "1" } else { "0" });
-        assert_eq!(request(s.port(), &bad, "Password: ").unwrap(), None);
-        assert_eq!(request(s.port(), "", "Password: ").unwrap(), None);
+        assert_eq!(request(s.port(), &bad, "main", "Password: ").unwrap(), None);
+        assert_eq!(request(s.port(), "", "main", "Password: ").unwrap(), None);
     }
 
     #[test]
     fn backend_cancel_unblocks_client() {
         let seen: Arc<Mutex<Vec<u64>>> = Arc::default();
         let seen2 = seen.clone();
-        let s = Server::start(move |p| seen2.lock().unwrap().push(p.id), |_| {}).unwrap();
+        let s = Server::start(move |p| seen2.lock().unwrap().push(p.id), |_, _| {}).unwrap();
         let (port, token) = (s.port(), s.token().to_string());
-        let t = std::thread::spawn(move || request(port, &token, "Passphrase: ").unwrap());
+        let t = std::thread::spawn(move || request(port, &token, "grove-2", "Passphrase: ").unwrap());
         // Wait for the prompt to be shown, then cancel it from the backend.
         while seen.lock().unwrap().is_empty() {
             std::thread::sleep(Duration::from_millis(10));
         }
-        s.cancel_all();
+        // Another window's Cancel leaves it alone.
+        s.cancel_window("main");
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(!t.is_finished());
+        s.cancel_window("grove-2");
         assert_eq!(t.join().unwrap(), None);
+    }
+
+    #[test]
+    fn prompts_carry_their_window() {
+        let windows: Arc<Mutex<Vec<String>>> = Arc::default();
+        let w2 = windows.clone();
+        let slot: Arc<OnceLock<Arc<Server>>> = Arc::new(OnceLock::new());
+        let s2 = slot.clone();
+        let s = Server::start(
+            move |p| {
+                w2.lock().unwrap().push(p.window.clone());
+                let (id, slot) = (p.id, s2.clone());
+                std::thread::spawn(move || slot.get().unwrap().answer(id, Some("x".into())));
+            },
+            |_, _| {},
+        )
+        .unwrap();
+        slot.set(s.clone()).ok().unwrap();
+        assert_eq!(request(s.port(), s.token(), "grove-3", "Two\nlines: ").unwrap().as_deref(), Some("x"));
+        assert_eq!(*windows.lock().unwrap(), ["grove-3"]);
     }
 
     #[test]

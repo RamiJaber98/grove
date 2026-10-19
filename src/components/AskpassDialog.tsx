@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { isTauri, network, type AskpassPrompt } from "../api/git";
+import { listenHere } from "../windowEvents";
 
 /**
  * Credential prompt for git/ssh (username, password, key passphrase, host
@@ -14,9 +14,10 @@ export default function AskpassDialog() {
   useEffect(() => {
     if (!isTauri) return;
     const subs = [
-      listen<AskpassPrompt>("askpass", (e) => setRequest(e.payload)),
+      // Only prompts from this window's own operations arrive here.
+      listenHere<AskpassPrompt>("askpass", (e) => setRequest(e.payload)),
       // Timed out, or the operation was cancelled.
-      listen<number>("askpass-closed", (e) => setRequest((r) => (r?.id === e.payload ? null : r))),
+      listenHere<number>("askpass-closed", (e) => setRequest((r) => (r?.id === e.payload ? null : r))),
     ];
     return () => subs.forEach((s) => s.then((f) => f()));
   }, []);

@@ -4,9 +4,9 @@
 
 use std::path::Path;
 
-use tauri::AppHandle;
+use tauri::{AppHandle, WebviewWindow};
 
-use crate::commands::blocking;
+use crate::commands::{blocking, network};
 use crate::git::image::ImageVersions;
 use crate::git::lfs::LfsInfo;
 use crate::git::submodule::{Submodule, SubmoduleDiff};
@@ -25,13 +25,13 @@ pub async fn image_versions(
 }
 
 #[tauri::command]
-pub async fn delete_remote_branch(root: String, name: String) -> GitResult<String> {
-    blocking(move || git::remote_branch::delete_remote_branch(Path::new(&root), &name)).await
+pub async fn delete_remote_branch(window: WebviewWindow, root: String, name: String) -> GitResult<String> {
+    network(window, move |net| git::remote_branch::delete_remote_branch(Path::new(&root), &name, net)).await
 }
 
 #[tauri::command]
-pub async fn publish_branch(root: String, remote: String) -> GitResult<String> {
-    blocking(move || git::remote_branch::publish_branch(Path::new(&root), &remote)).await
+pub async fn publish_branch(window: WebviewWindow, root: String, remote: String) -> GitResult<String> {
+    network(window, move |net| git::remote_branch::publish_branch(Path::new(&root), &remote, net)).await
 }
 
 #[tauri::command]
@@ -50,8 +50,8 @@ pub async fn submodule_diff(root: String, group: String, path: String, rev: Opti
 }
 
 #[tauri::command]
-pub async fn update_submodule(root: String, path: String) -> GitResult<()> {
-    blocking(move || git::submodule::update(Path::new(&root), &path)).await
+pub async fn update_submodule(window: WebviewWindow, root: String, path: String) -> GitResult<()> {
+    network(window, move |net| git::submodule::update(Path::new(&root), &path, net)).await
 }
 
 #[tauri::command]
@@ -75,8 +75,8 @@ pub async fn lfs_info(root: String) -> GitResult<LfsInfo> {
 }
 
 #[tauri::command]
-pub async fn lfs_pull(root: String) -> GitResult<String> {
-    blocking(move || git::lfs::pull(Path::new(&root))).await
+pub async fn lfs_pull(window: WebviewWindow, root: String) -> GitResult<String> {
+    network(window, move |net| git::lfs::pull(Path::new(&root), net)).await
 }
 
 /// Async on purpose: building a window from a sync command deadlocks on Windows.

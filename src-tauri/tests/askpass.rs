@@ -19,7 +19,7 @@ fn git_asks_grove_for_credentials() {
             let (id, slot) = (p.id, s2.clone());
             std::thread::spawn(move || slot.get().unwrap().answer(id, Some(answer.into())));
         },
-        |_| {},
+        |_, _| {},
     )
     .unwrap();
     slot.set(server.clone()).ok().unwrap();
@@ -32,7 +32,7 @@ fn git_asks_grove_for_credentials() {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    for (k, v) in server.env(exe) {
+    for (k, v) in server.env(exe, "main") {
         cmd.env(k, v);
     }
     let mut child = cmd.spawn().unwrap();

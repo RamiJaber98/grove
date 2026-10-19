@@ -55,16 +55,17 @@ pub fn parse_progress(line: &str) -> Option<Progress> {
 /// Runs `git <args>` in `cwd`, calling `on_progress` for each progress update.
 /// Setting `cancel` kills git and everything it started, and the call
 /// returns a "Cancelled." error. Output and error messages otherwise match
-/// `run`, with progress lines left out.
+/// `run`, with progress lines left out. Credential prompts show in `window`.
 pub fn run_streaming(
     cwd: &Path,
     args: &[&str],
     on_progress: &mut dyn FnMut(Progress),
     cancel: &AtomicBool,
+    window: &str,
 ) -> GitResult<String> {
     let mut cmd = command(cwd, args);
     cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
-    crate::askpass::configure(&mut cmd);
+    crate::askpass::configure(&mut cmd, window);
     #[cfg(unix)]
     {
         // Own process group, so cancelling can kill ssh/helpers too.
@@ -177,27 +178,29 @@ fn kill_tree(child: &mut Child) {
     let _ = child.kill();
 }
 
-/// Operations that can currently be cancelled.
-static ACTIVE: Mutex<Vec<Arc<AtomicBool>>> = Mutex::new(Vec::new());
+/// Operations that can currently be cancelled, with the window that started each.
+static ACTIVE: Mutex<Vec<(Arc<AtomicBool>, String)>> = Mutex::new(Vec::new());
 
-/// A cancellable, progress-reporting network operation. Registered while
-/// alive so `cancel_all` (the UI's Cancel button) can reach it.
+/// A cancellable, progress-reporting network operation started from one
+/// window. Registered while alive so that window's Cancel button
+/// (`cancel_window`) can reach it.
 pub struct Op {
     cancel: Arc<AtomicBool>,
+    window: String,
     sink: Box<dyn Fn(&Progress) + Send>,
 }
 
 impl Op {
-    pub fn new(sink: impl Fn(&Progress) + Send + 'static) -> Self {
+    pub fn new(window: &str, sink: impl Fn(&Progress) + Send + 'static) -> Self {
         let cancel = Arc::new(AtomicBool::new(false));
-        ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).push(cancel.clone());
-        Self { cancel, sink: Box::new(sink) }
+        ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).push((cancel.clone(), window.to_string()));
+        Self { cancel, window: window.to_string(), sink: Box::new(sink) }
     }
 
-    /// No progress reporting; still cancellable via `cancel_all`.
+    /// No window and no progress reporting; still cancellable via its flag.
     #[cfg_attr(not(test), allow(dead_code))] // UI-less callers (tests) use it.
     pub fn silent() -> Self {
-        Self::new(|_| {})
+        Self::new("", |_| {})
     }
 
     /// The flag that cancels this operation.
@@ -212,30 +215,38 @@ impl Op {
 
     /// Runs `git <args>` with `--progress` inserted after the subcommand.
     pub fn run(&self, cwd: &Path, args: &[&str]) -> GitResult<String> {
-        // Multi-step operations (sync) stop between steps too.
-        if self.cancelled() {
-            return Err(GitError::new("Cancelled."));
-        }
         let mut full: Vec<&str> = Vec::with_capacity(args.len() + 1);
         if let Some((sub, rest)) = args.split_first() {
             full.push(sub);
             full.push("--progress");
             full.extend_from_slice(rest);
         }
-        run_streaming(cwd, &full, &mut |p| (self.sink)(&p), &self.cancel)
+        self.run_plain(cwd, &full)
+    }
+
+    /// Runs `git <args>` as given, for commands whose `--progress` option
+    /// doesn't go right after the subcommand (or that have none).
+    pub fn run_plain(&self, cwd: &Path, args: &[&str]) -> GitResult<String> {
+        // Multi-step operations (sync) stop between steps too.
+        if self.cancelled() {
+            return Err(GitError::new("Cancelled."));
+        }
+        run_streaming(cwd, args, &mut |p| (self.sink)(&p), &self.cancel, &self.window)
     }
 }
 
 impl Drop for Op {
     fn drop(&mut self) {
-        ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).retain(|c| !Arc::ptr_eq(c, &self.cancel));
+        ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).retain(|(c, _)| !Arc::ptr_eq(c, &self.cancel));
     }
 }
 
-/// Cancels every running network operation.
-pub fn cancel_all() {
-    for c in ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).iter() {
-        c.store(true, Ordering::SeqCst);
+/// Cancels the network operations `window` started.
+pub fn cancel_window(window: &str) {
+    for (c, w) in ACTIVE.lock().unwrap_or_else(|e| e.into_inner()).iter() {
+        if w == window {
+            c.store(true, Ordering::SeqCst);
+        }
     }
 }
 
@@ -279,9 +290,9 @@ mod tests {
     fn streaming_matches_run() {
         let tmp = tempfile::tempdir().unwrap();
         let never = AtomicBool::new(false);
-        let out = run_streaming(tmp.path(), &["init", "-b", "main"], &mut |_| {}, &never).unwrap();
+        let out = run_streaming(tmp.path(), &["init", "-b", "main"], &mut |_| {}, &never, "").unwrap();
         assert!(out.contains("Initialized"), "{out}");
-        let err = run_streaming(tmp.path(), &["rev-parse", "nope"], &mut |_| {}, &never).unwrap_err();
+        let err = run_streaming(tmp.path(), &["rev-parse", "nope"], &mut |_| {}, &never, "").unwrap_err();
         assert!(err.message.contains("nope"), "{}", err.message);
     }
 
@@ -296,21 +307,21 @@ mod tests {
         });
         let start = Instant::now();
         // A shell alias that would run for a minute, via git's own sh.
-        let err = run_streaming(tmp.path(), &["-c", "alias.wait=!sleep 60", "wait"], &mut |_| {}, &cancel).unwrap_err();
+        let err = run_streaming(tmp.path(), &["-c", "alias.wait=!sleep 60", "wait"], &mut |_| {}, &cancel, "").unwrap_err();
         assert_eq!(err.message, "Cancelled.");
         assert!(start.elapsed() < Duration::from_secs(20), "took {:?}", start.elapsed());
     }
 
     #[test]
     fn ops_register_while_alive() {
-        // Not calling cancel_all here: it would also cancel ops in tests
+        // Not calling cancel_window here: it would also cancel ops in tests
         // running in parallel.
         let op = Op::silent();
         let flag = op.cancel_flag();
-        assert!(ACTIVE.lock().unwrap().iter().any(|c| Arc::ptr_eq(c, &flag)));
+        assert!(ACTIVE.lock().unwrap().iter().any(|(c, _)| Arc::ptr_eq(c, &flag)));
         flag.store(true, Ordering::SeqCst);
         assert_eq!(op.run(Path::new("."), &["version"]).unwrap_err().message, "Cancelled.");
         drop(op);
-        assert!(!ACTIVE.lock().unwrap().iter().any(|c| Arc::ptr_eq(c, &flag)));
+        assert!(!ACTIVE.lock().unwrap().iter().any(|(c, _)| Arc::ptr_eq(c, &flag)));
     }
 }

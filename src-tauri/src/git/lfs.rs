@@ -5,6 +5,7 @@ use std::path::Path;
 
 use serde::Serialize;
 
+use super::stream::Op;
 use super::{run, GitError, GitResult};
 
 /// Pointer files are tiny; anything bigger is real content.
@@ -65,11 +66,11 @@ pub fn info(root: &Path) -> LfsInfo {
 
 /// Downloads LFS objects for the current checkout and replaces pointers in
 /// the working tree with the real files.
-pub fn pull(root: &Path) -> GitResult<String> {
+pub fn pull(root: &Path, net: &Op) -> GitResult<String> {
     if !installed(root) {
         return Err(GitError::new("Git LFS isn't installed. Install it from https://git-lfs.com and try again."));
     }
-    run(root, &["lfs", "pull"])?;
+    net.run_plain(root, &["lfs", "pull"])?;
     Ok("Fetched LFS objects.".to_string())
 }
 
