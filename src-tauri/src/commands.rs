@@ -28,13 +28,24 @@ pub(crate) async fn blocking<T: Send + 'static>(f: impl FnOnce() -> GitResult<T>
 #[tauri::command]
 pub fn launch_path() -> Option<String> {
     let arg = std::env::args().skip(1).find(|a| !a.starts_with('-'))?;
-    let path = PathBuf::from(arg);
+    let path = PathBuf::from(unmangle_trailing_quote(arg));
     let path = if path.is_absolute() {
         path
     } else {
         std::env::current_dir().ok()?.join(path)
     };
     Some(path.to_string_lossy().into_owned())
+}
+
+/// Explorer's "Open in Grove" passes `"%V"`, which for a drive root is
+/// `"C:\"`; Windows reads `\"` as an escaped quote, so the argument arrives
+/// as `C:"`. File names can't contain `"`, so a trailing one is that
+/// backslash.
+fn unmangle_trailing_quote(arg: String) -> String {
+    match arg.strip_suffix('"') {
+        Some(rest) if cfg!(windows) => format!("{rest}\\"),
+        _ => arg,
+    }
 }
 
 /// Resolves `path` to its repository and starts watching it for the
@@ -468,4 +479,16 @@ pub async fn apply_lines(
     shown: git::patch::Shown,
 ) -> GitResult<()> {
     blocking(move || git::patch::apply_shown_lines(Path::new(&root), &path, from.as_deref(), op, &lines, &shown)).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn repairs_a_quoted_drive_root() {
+        let fixed = unmangle_trailing_quote("C:\"".into());
+        assert_eq!(fixed, if cfg!(windows) { "C:\\" } else { "C:\"" });
+        assert_eq!(unmangle_trailing_quote("C:\repo".into()), "C:\repo");
+    }
 }
