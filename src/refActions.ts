@@ -211,7 +211,14 @@ export async function finishOperation(action: "abort" | "continue") {
   }
   await withBusy(action === "abort" ? "Aborting…" : "Continuing…", async (r) => {
     await git.operation(r, operation, action);
-    toast(action === "abort" ? `Aborted the ${operation}.` : `Finished the ${operation}.`);
+    if (action === "abort") return toast(`Aborted the ${operation}.`);
+    // A rebase that reaches the next `edit` stops again but succeeds.
+    const after = await git.status(r);
+    toast(
+      after.operation
+        ? `The ${after.operation} stopped again. Make your changes, then Continue.`
+        : `Finished the ${operation}.`,
+    );
   });
 }
 
