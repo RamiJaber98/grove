@@ -8,4 +8,14 @@ let active: editor.IStandaloneDiffEditor | null = null;
 export const getActiveDiffEditor = () => active;
 export const setActiveDiffEditor = (e: editor.IStandaloneDiffEditor | null) => {
   active = e;
+  shown = null;
+};
+
+// The exact texts the active editor was given. Partial staging sends them
+// along so the backend can refuse line numbers from an outdated diff.
+let shown: { original: string; modified: string } | null = null;
+
+export const getShownTexts = () => shown;
+export const setShownTexts = (texts: { original: string; modified: string } | null) => {
+  shown = texts;
 };

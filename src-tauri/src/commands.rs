@@ -450,6 +450,7 @@ pub async fn apply_lines(
     from: Option<String>,
     op: git::patch::PatchOp,
     lines: git::patch::LineSelection,
+    shown: git::patch::Shown,
 ) -> GitResult<()> {
-    blocking(move || git::patch::apply_lines(Path::new(&root), &path, from.as_deref(), op, &lines)).await
+    blocking(move || git::patch::apply_shown_lines(Path::new(&root), &path, from.as_deref(), op, &lines, &shown)).await
 }

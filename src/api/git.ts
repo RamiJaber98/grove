@@ -313,6 +313,21 @@ export interface LineRanges {
   new: [number, number][];
 }
 
-/** Stages, unstages or discards just `lines` of `path`'s diff. */
-export const applyLines = (root: string, path: string, from: string | undefined, op: PatchOp, lines: LineRanges) =>
-  invoke<void>("apply_lines", { root, path, from, op, lines });
+/** Both texts of the diff the lines were picked in. */
+export interface ShownTexts {
+  original: string;
+  modified: string;
+}
+
+/**
+ * Stages, unstages or discards just `lines` of `path`'s diff. Refused if the
+ * file no longer matches `shown`, since the line numbers refer to it.
+ */
+export const applyLines = (
+  root: string,
+  path: string,
+  from: string | undefined,
+  op: PatchOp,
+  lines: LineRanges,
+  shown: ShownTexts,
+) => invoke<void>("apply_lines", { root, path, from, op, lines, shown });

@@ -76,6 +76,34 @@ struct FileDiff {
     hunks: Vec<Hunk>,
 }
 
+/// Both sides of the diff the viewer showed when the user picked lines.
+#[derive(Debug, Deserialize)]
+pub struct Shown {
+    pub original: String,
+    pub modified: String,
+}
+
+/// `apply_lines`, but only if the file still matches `shown`. The line
+/// numbers refer to that diff; applied to a newer one they would pick other
+/// lines, and `git apply` couldn't tell because the patch is built fresh.
+pub fn apply_shown_lines(
+    root: &Path,
+    path: &str,
+    from: Option<&str>,
+    op: PatchOp,
+    selection: &LineSelection,
+    shown: &Shown,
+) -> GitResult<()> {
+    let group = if op == PatchOp::Unstage { "staged" } else { "changes" };
+    let now = super::diff::versions(root, group, path, from, None)?;
+    if now.original.text != shown.original || now.modified.text != shown.modified {
+        return Err(GitError::new(
+            "The file changed since its diff was shown. Check the updated diff and try again.",
+        ));
+    }
+    apply_lines(root, path, from, op, selection)
+}
+
 /// Applies only the selected lines of `path`'s diff. `from` is the old path
 /// of a rename, which isn't supported line by line.
 pub fn apply_lines(
@@ -673,5 +701,29 @@ mod tests {
         assert!(apply_lines(root, "f.txt", Some("old.txt"), PatchOp::Stage, &sel(&[], &[(2, 2)])).is_err());
         assert!(apply_lines(root, "../f.txt", None, PatchOp::Stage, &sel(&[], &[(2, 2)])).is_err());
         assert_eq!(index(root, "f.txt"), "a\nb\n");
+    }
+
+    #[test]
+    fn refuses_lines_from_a_stale_diff() {
+        let dir = repo();
+        let root = dir.path();
+        commit_file(root, "f.txt", "a\nb\nc\n");
+        std::fs::write(root.join("f.txt"), "a\nB\nc\n").unwrap();
+        let shown = Shown { original: "a\nb\nc\n".into(), modified: "a\nB\nc\n".into() };
+
+        // A line was added at the top after the diff was drawn: line 2 now
+        // means something else, so nothing is discarded.
+        std::fs::write(root.join("f.txt"), "new\na\nB\nc\n").unwrap();
+        let err = apply_shown_lines(root, "f.txt", None, PatchOp::Discard, &sel(&[(2, 2)], &[(2, 2)]), &shown).unwrap_err();
+        assert!(err.message.contains("changed since"), "{}", err.message);
+        assert_eq!(disk(root, "f.txt"), "new\na\nB\nc\n");
+
+        // Matching what was shown, it applies.
+        std::fs::write(root.join("f.txt"), "a\nB\nc\n").unwrap();
+        apply_shown_lines(root, "f.txt", None, PatchOp::Stage, &sel(&[(2, 2)], &[(2, 2)]), &shown).unwrap();
+        assert_eq!(index(root, "f.txt"), "a\nB\nc\n");
+        let staged = Shown { original: "a\nb\nc\n".into(), modified: "a\nB\nc\n".into() };
+        apply_shown_lines(root, "f.txt", None, PatchOp::Unstage, &sel(&[(2, 2)], &[(2, 2)]), &staged).unwrap();
+        assert_eq!(index(root, "f.txt"), "a\nb\nc\n");
     }
 }

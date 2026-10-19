@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { monaco } from "../monaco";
-import { setActiveDiffEditor } from "../diffEditorHandle";
+import { setActiveDiffEditor, setShownTexts } from "../diffEditorHandle";
 import { useResolvedTheme } from "../theme";
 import { useRepo } from "../store/repo";
 import { installHunkActions } from "./hunkActions";
@@ -91,6 +91,7 @@ export default function DiffEditor({ path, original, modified, onStats, partialS
     const e = editor.current!;
     const old = e.getModel();
     const samePath = shownPath.current === path;
+    setShownTexts({ original, modified });
     if (samePath && old && old.original.getValue() === original && old.modified.getValue() === modified) return;
 
     const viewState = samePath ? e.saveViewState() : null;

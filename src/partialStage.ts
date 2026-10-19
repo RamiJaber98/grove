@@ -11,7 +11,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import type { editor } from "monaco-editor/editor/editor.api";
 import { applyLines, type LineRanges, type PatchOp } from "./api/git";
 import { withBusy } from "./actions";
-import { getActiveDiffEditor } from "./diffEditorHandle";
+import { getActiveDiffEditor, getShownTexts } from "./diffEditorHandle";
 import { useRepo } from "./store/repo";
 
 export type Scope = "hunk" | "lines";
@@ -141,7 +141,9 @@ export async function partialStage(op: PatchOp, scope: Scope, side?: DiffSide) {
 /** Applies `op` to `lines` of the open file, confirming discards first. */
 export async function applyRanges(op: PatchOp, scope: Scope, lines: LineRanges) {
   const sel = useRepo.getState().selection;
-  if (!sel) return;
+  // Taken now, before the confirmation: the lines refer to this diff.
+  const shown = getShownTexts();
+  if (!sel || !shown) return;
   if (op === "discard") {
     const what = scope === "hunk" ? "this change" : "the selected lines";
     const ok = await ask(`Discard ${what} in ${sel.path.split("/").pop()}?\n\nThis can't be undone.`, {
@@ -152,5 +154,5 @@ export async function applyRanges(op: PatchOp, scope: Scope, lines: LineRanges) 
     });
     if (!ok) return;
   }
-  await withBusy(BUSY[op], (root) => applyLines(root, sel.path, sel.from, op, lines));
+  await withBusy(BUSY[op], (root) => applyLines(root, sel.path, sel.from, op, lines, shown));
 }
